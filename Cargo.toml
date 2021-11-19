@@ -1,0 +1,15 @@
+[package]
+name = "mactime2"
+version = "0.1.0"
+edition = "2018"
+authors = ["Jan Starke <Jan.Starke@t-systems.com>"]
+description = "Replacement for `mactime`"
+homepage = "https://www.github.com/janstarke/mactime2"
+license-file = "LICENSE"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bodyfile="0.1"
+clap = "2"
+anyhow = "1.0"
