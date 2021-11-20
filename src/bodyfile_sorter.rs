@@ -71,6 +71,8 @@ fn insert_timestamp(entries: &mut BTreeMap<i64, HashSet<ListEntry>>, flag: MACBF
     } else {
         panic!("no flags set")
     };
+    assert_ne!(timestamp, -1);
+
     match entries.get_mut(&timestamp) {
         None => {
             let mut entries_at_ts = HashSet::new();
@@ -84,7 +86,7 @@ fn insert_timestamp(entries: &mut BTreeMap<i64, HashSet<ListEntry>>, flag: MACBF
 
         Some(entries_at_ts) => {
             let entry = ListEntry {
-                flags: MACBFlags::M,
+                flags: flag,
                 line: line,
             };
             entries_at_ts.insert(entry);
@@ -102,6 +104,11 @@ fn worker(decoder: Receiver<Bodyfile3Line>) {
             }
             Ok(l) => l,
         });
+
+        // # we need *some* value in mactimes!
+        if line.get_mtime() == 0 && line.get_atime() == 0 && line.get_ctime() == 0 && line.get_crtime() == 0 {
+            continue;
+        }
 
         let mut flags: [MACBFlags; 4] = [MACBFlags::NONE; 4];
 
@@ -142,12 +149,17 @@ fn worker(decoder: Receiver<Bodyfile3Line>) {
         }
     }
 
+    println!("Date,Size,Type,Mode,UID,GID,Meta,File Name");
     for (ts, entries_at_ts) in entries.iter() {
         let timestamp = NaiveDateTime::from_timestamp(*ts, 0);
         let timestamp = timestamp.format("%a %b %d %Y %T");
         for line in entries_at_ts {
-            println!("{},0,{},0,0,0,0,\"{}\"",timestamp,
-                line.flags, line.line.get_name());
+            println!("{},{},{},{},0,0,{},\"{}\"",timestamp,
+                line.line.get_size(),
+                line.flags,
+                line.line.get_mode(),
+                line.line.get_inode(),
+                line.line.get_name());
         }
     }
 }

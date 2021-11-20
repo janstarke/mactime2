@@ -13,7 +13,7 @@ use bodyfile_sorter::*;
 
 fn main() -> Result<()> {
     let _ = TermLogger::init(
-        LevelFilter::Warn,
+        LevelFilter::Info,
         Config::default(),
         TerminalMode::Stderr,
         ColorChoice::Auto);
