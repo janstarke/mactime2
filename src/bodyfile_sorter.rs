@@ -2,12 +2,13 @@ use crate::Joinable;
 use bitflags::bitflags;
 use bodyfile::Bodyfile3Line;
 use std::collections::BTreeMap;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 use std::fmt;
 use std::rc::Rc;
 use std::sync::mpsc::Receiver;
 use std::thread::JoinHandle;
 use chrono::{NaiveDate, NaiveDateTime};
+use std::cmp::Ordering;
 
 pub struct BodyfileSorter {
     worker: Option<JoinHandle<()>>,
@@ -38,28 +39,27 @@ struct ListEntry {
     line: Rc<Bodyfile3Line>,
 }
 
-impl std::hash::Hash for ListEntry {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.line.get_atime().hash(state);
-        self.line.get_mtime().hash(state);
-        self.line.get_ctime().hash(state);
-        self.line.get_crtime().hash(state);
-        self.line.get_name().hash(state);
-    }
-}
-
 impl Eq for ListEntry {}
 impl PartialEq for ListEntry {
     fn eq(&self, other: &Self) -> bool {
-        self.line.get_atime() == other.line.get_atime()
-            && self.line.get_mtime() == other.line.get_mtime()
-            && self.line.get_ctime() == other.line.get_ctime()
-            && self.line.get_crtime() == other.line.get_crtime()
-            && self.line.get_name() == other.line.get_name()
+        self.line.get_name().eq(other.line.get_name())
+    }
+}
+impl PartialOrd for ListEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 
-fn insert_timestamp(entries: &mut BTreeMap<i64, HashSet<ListEntry>>, flag: MACBFlags, line: Rc<Bodyfile3Line>) {
+impl Ord for ListEntry {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.line.get_name().cmp(&other.line.get_name())
+    }
+}
+
+
+
+fn insert_timestamp(entries: &mut BTreeMap<i64, BTreeSet<ListEntry>>, flag: MACBFlags, line: Rc<Bodyfile3Line>) {
     let timestamp = if flag.contains(MACBFlags::M) {
         line.get_mtime()
     } else if flag.contains(MACBFlags::A) {
@@ -75,7 +75,7 @@ fn insert_timestamp(entries: &mut BTreeMap<i64, HashSet<ListEntry>>, flag: MACBF
 
     match entries.get_mut(&timestamp) {
         None => {
-            let mut entries_at_ts = HashSet::new();
+            let mut entries_at_ts = BTreeSet::new();
             let entry = ListEntry {
                 flags: flag,
                 line: line,
@@ -95,7 +95,7 @@ fn insert_timestamp(entries: &mut BTreeMap<i64, HashSet<ListEntry>>, flag: MACBF
 }
 
 fn worker(decoder: Receiver<Bodyfile3Line>) {
-    let mut entries: BTreeMap<i64, HashSet<ListEntry>> = BTreeMap::new();
+    let mut entries: BTreeMap<i64, BTreeSet<ListEntry>> = BTreeMap::new();
 
     loop {
         let line = Rc::new(match decoder.recv() {
