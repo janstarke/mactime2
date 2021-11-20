@@ -1,29 +1,161 @@
 use crate::Joinable;
+use bitflags::bitflags;
 use bodyfile::Bodyfile3Line;
-use std::sync::mpsc::{Receiver};
-use std::thread::{JoinHandle};
+use std::collections::BTreeMap;
+use std::collections::HashSet;
+use std::fmt;
+use std::rc::Rc;
+use std::sync::mpsc::Receiver;
+use std::thread::JoinHandle;
+use chrono::{NaiveDate, NaiveDateTime};
 
 pub struct BodyfileSorter {
-    worker: Option<JoinHandle<()>>
+    worker: Option<JoinHandle<()>>,
+}
+
+bitflags! {
+    struct MACBFlags: u8 {
+        const NONE = 0b00000000;
+        const M = 0b00000001;
+        const A = 0b00000010;
+        const C = 0b00000100;
+        const B = 0b00001000;
+    }
+}
+
+impl fmt::Display for MACBFlags {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let m = if *self & Self::M == Self::M { 'm' } else { '.' };
+        let a = if *self & Self::A == Self::A { 'a' } else { '.' };
+        let c = if *self & Self::C == Self::C { 'c' } else { '.' };
+        let b = if *self & Self::B == Self::B { 'b' } else { '.' };
+        write!(f, "{}{}{}{}", m, a, c, b)
+    }
+}
+
+struct ListEntry {
+    flags: MACBFlags,
+    line: Rc<Bodyfile3Line>,
+}
+
+impl std::hash::Hash for ListEntry {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.line.get_atime().hash(state);
+        self.line.get_mtime().hash(state);
+        self.line.get_ctime().hash(state);
+        self.line.get_crtime().hash(state);
+        self.line.get_name().hash(state);
+    }
+}
+
+impl Eq for ListEntry {}
+impl PartialEq for ListEntry {
+    fn eq(&self, other: &Self) -> bool {
+        self.line.get_atime() == other.line.get_atime()
+            && self.line.get_mtime() == other.line.get_mtime()
+            && self.line.get_ctime() == other.line.get_ctime()
+            && self.line.get_crtime() == other.line.get_crtime()
+            && self.line.get_name() == other.line.get_name()
+    }
+}
+
+fn insert_timestamp(entries: &mut BTreeMap<i64, HashSet<ListEntry>>, flag: MACBFlags, line: Rc<Bodyfile3Line>) {
+    let timestamp = if flag.contains(MACBFlags::M) {
+        line.get_mtime()
+    } else if flag.contains(MACBFlags::A) {
+        line.get_atime()
+    } else if flag.contains(MACBFlags::C) {
+        line.get_ctime()
+    } else if flag.contains(MACBFlags::B) {
+        line.get_crtime()
+    } else {
+        panic!("no flags set")
+    };
+    match entries.get_mut(&timestamp) {
+        None => {
+            let mut entries_at_ts = HashSet::new();
+            let entry = ListEntry {
+                flags: flag,
+                line: line,
+            };
+            entries_at_ts.insert(entry);
+            entries.insert(timestamp, entries_at_ts);
+        }
+
+        Some(entries_at_ts) => {
+            let entry = ListEntry {
+                flags: MACBFlags::M,
+                line: line,
+            };
+            entries_at_ts.insert(entry);
+        }
+    }
 }
 
 fn worker(decoder: Receiver<Bodyfile3Line>) {
-    loop {
-        let line = match decoder.recv() {
-            Err(_) => {break;}
-            Ok(l) => l
-        };
+    let mut entries: BTreeMap<i64, HashSet<ListEntry>> = BTreeMap::new();
 
-        println!("{}", line);
+    loop {
+        let line = Rc::new(match decoder.recv() {
+            Err(_) => {
+                break;
+            }
+            Ok(l) => l,
+        });
+
+        let mut flags: [MACBFlags; 4] = [MACBFlags::NONE; 4];
+
+        if line.get_mtime() != -1 {
+            flags[0] |= MACBFlags::M;
+        }
+        if line.get_atime() != -1 {
+            if line.get_mtime() == line.get_atime() {
+                flags[0] |= MACBFlags::A;
+            } else {
+                flags[1] |= MACBFlags::A;
+            }
+        }
+        if line.get_ctime() != -1 {
+            if        line.get_mtime() == line.get_ctime() {
+                flags[0] |= MACBFlags::C;
+            } else if line.get_atime() == line.get_ctime() {
+                flags[1] |= MACBFlags::C;
+            } else  {
+                flags[2] |= MACBFlags::C;
+            }
+        }
+        if line.get_crtime() != -1 {
+            if        line.get_mtime() == line.get_crtime() {
+                flags[0] |= MACBFlags::B;
+            } else if line.get_atime() == line.get_crtime() {
+                flags[1] |= MACBFlags::B;
+            } else if line.get_ctime() == line.get_crtime() {
+                flags[2] |= MACBFlags::B;
+            } else  {
+                flags[3] |= MACBFlags::B;
+            }
+        }
+        for flag in flags {
+            if flag != MACBFlags::NONE {
+                insert_timestamp(&mut entries, flag, Rc::clone(&line));
+            }
+        }
+    }
+
+    for (ts, entries_at_ts) in entries.iter() {
+        let timestamp = NaiveDateTime::from_timestamp(*ts, 0);
+        let timestamp = timestamp.format("%a %b %d %Y %T");
+        for line in entries_at_ts {
+            println!("{},0,{},0,0,0,0,\"{}\"",timestamp,
+                line.flags, line.line.get_name());
+        }
     }
 }
 
 impl BodyfileSorter {
     pub fn with_receiver(decoder: Receiver<Bodyfile3Line>) -> Self {
         Self {
-            worker: Some(std::thread::spawn(move || {
-                worker(decoder)
-            }))
+            worker: Some(std::thread::spawn(move || worker(decoder))),
         }
     }
 }
