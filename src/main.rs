@@ -91,7 +91,11 @@ fn display_zones() {
 }
 
 fn format_date(unix_ts: i64, src_zone: &Tz, dst_zone: &Tz) -> String {
-    let src_timestamp = src_zone.timestamp(unix_ts, 0);
+    let src_timestamp = match src_zone.from_local_datetime(&NaiveDateTime::from_timestamp(unix_ts, 0)) {
+        LocalResult::None => { return "INVALID DATETIME".to_owned(); }
+        LocalResult::Single(t) => t,
+        LocalResult::Ambiguous(t1, _t2) => t1
+    };
     let dst_timestamp = src_timestamp.with_timezone(dst_zone);
     dst_timestamp.to_rfc3339()
 }
