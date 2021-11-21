@@ -1,9 +1,11 @@
 use anyhow::Result;
 use clap::{App, Arg};
 use simplelog::{TermLogger, LevelFilter, Config, TerminalMode, ColorChoice};
-use chrono::{NaiveDateTime};
+use chrono::{NaiveDateTime, LocalResult};
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use chrono_tz::{TZ_VARIANTS, Tz};
+use chrono::offset::TimeZone;
 
 mod filter;
 mod bodyfile_reader;
@@ -36,9 +38,31 @@ fn main() -> Result<()> {
             Arg::with_name("CSV_FORMAT")
                 .short("d")
                 .help("output as CSV instead of TXT")
+        ).arg(
+            Arg::with_name("SRC_ZONE")
+                .short("f")
+                .takes_value(true)
+                .help("name of offset of source timezone (or 'list' to display all possible values")
+        ).arg(
+            Arg::with_name("DST_ZONE")
+                .short("t")
+                .takes_value(true)
+                .help("name of offset of destination timezone (or 'list' to display all possible values")
         );
 
     let matches = app.get_matches();
+
+    let src_zone: Tz = match matches.value_of("SRC_ZONE") {
+        Some("list") => { display_zones(); return Ok(()); },
+        Some(tz) => tz.parse().unwrap(),
+        None => Tz::UTC
+    };
+    let dst_zone: Tz = match matches.value_of("DST_ZONE") {
+        Some("list") => { display_zones(); return Ok(()); },
+        Some(tz) => tz.parse().unwrap(),
+        None => Tz::UTC
+    };
+
     let mut reader = BodyfileReader::from(matches.value_of("BODYFILE"))?;
     let mut decoder = BodyfileDecoder::with_receiver(reader.get_receiver());
     let mut sorter = BodyfileSorter::with_receiver(decoder.get_receiver());
@@ -48,9 +72,9 @@ fn main() -> Result<()> {
     match sorter.join() {
         Ok(entries) => {
             if matches.is_present("CSV_FORMAT") {
-                display_csv(entries)
+                display_csv(entries, &src_zone, &dst_zone)
             } else {
-                display_txt(entries)
+                display_txt(entries, &src_zone, &dst_zone)
             }
         }
         Err(why) => {
@@ -60,15 +84,22 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn format_date(unix_ts: i64) -> String {
-    let timestamp = NaiveDateTime::from_timestamp(unix_ts, 0);
-    timestamp.format("%a %b %d %Y %T").to_string()
+fn display_zones() {
+    for v in TZ_VARIANTS.iter() {
+        println!("{}", v);
+    }
 }
 
-fn display_csv(entries: BTreeMap<i64, BTreeSet<ListEntry>>) {
+fn format_date(unix_ts: i64, src_zone: &Tz, dst_zone: &Tz) -> String {
+    let src_timestamp = src_zone.timestamp(unix_ts, 0);
+    let dst_timestamp = src_timestamp.with_timezone(dst_zone);
+    dst_timestamp.to_rfc3339()
+}
+
+fn display_csv(entries: BTreeMap<i64, BTreeSet<ListEntry>>, src_zone: &Tz, dst_zone: &Tz) {
     println!("Date,Size,Type,Mode,UID,GID,Meta,File Name");
     for (ts, entries_at_ts) in entries.iter() {
-        let timestamp = format_date(*ts);
+        let timestamp = format_date(*ts, src_zone, dst_zone);
         for line in entries_at_ts {
             println!(
                 "{},{},{},{},{},{},{},\"{}\"",
@@ -85,9 +116,9 @@ fn display_csv(entries: BTreeMap<i64, BTreeSet<ListEntry>>) {
     }
 }
 
-fn display_txt(entries: BTreeMap<i64, BTreeSet<ListEntry>>) {
+fn display_txt(entries: BTreeMap<i64, BTreeSet<ListEntry>>, src_zone: &Tz, dst_zone: &Tz) {
     for (ts, entries_at_ts) in entries.iter() {
-        let mut timestamp = format_date(*ts);
+        let mut timestamp = format_date(*ts, src_zone, dst_zone);
         for line in entries_at_ts {
             println!(
                 "{} {:>8} {} {:<12} {:<7} {:<7} {} {}",
@@ -100,7 +131,7 @@ fn display_txt(entries: BTreeMap<i64, BTreeSet<ListEntry>>) {
                 line.line.get_inode(),
                 line.line.get_name()
             );
-            timestamp = "                        ".to_owned();
+            timestamp = "                         ".to_owned();
         }
     }
 }
