@@ -27,7 +27,7 @@ fn worker(mut input: BodyfileSource, tx: Sender<String>) {
             Err(_) => {break;}
             Ok(s) => {
                 if s == 0 { break; }
-                
+
                 if let Err(_) = tx.send(line) {
                     break;
                 }}
@@ -59,7 +59,7 @@ impl BodyfileReader {
     }
 }
 
-impl Joinable for BodyfileReader {
+impl Joinable<()> for BodyfileReader {
     fn join(&mut self) -> std::thread::Result<()> {
         self.worker.take().unwrap().join()
     }

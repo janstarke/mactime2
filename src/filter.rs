@@ -6,6 +6,6 @@ pub trait Filter<From, To> {
     fn worker(reader: Receiver<From>, tx: Sender<To>);
 }
 
-pub trait Joinable {
-    fn join(&mut self) -> std::thread::Result<()>;
+pub trait Joinable<R> {
+    fn join(&mut self) -> std::thread::Result<R>;
 }

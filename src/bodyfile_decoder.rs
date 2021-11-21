@@ -60,7 +60,7 @@ impl BodyfileDecoder {
     }
 }
 
-impl Joinable for BodyfileDecoder {
+impl Joinable<()> for BodyfileDecoder {
     fn join(&mut self) -> std::thread::Result<()> {
         self.worker.take().unwrap().join()
     }

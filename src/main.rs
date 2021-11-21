@@ -1,6 +1,9 @@
 use anyhow::Result;
 use clap::{App, Arg};
 use simplelog::{TermLogger, LevelFilter, Config, TerminalMode, ColorChoice};
+use chrono::{NaiveDateTime};
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 
 mod filter;
 mod bodyfile_reader;
@@ -38,6 +41,30 @@ fn main() -> Result<()> {
 
     let _ = reader.join();
     let _ = decoder.join();
-    let _ = sorter.join();
+    match sorter.join() {
+        Ok(entries) => display_csv(entries),
+        Err(why) => {
+            log::error!("{:?}", why);
+        }
+    }
     Ok(())
+}
+
+fn display_csv(entries: BTreeMap<i64, BTreeSet<ListEntry>>) {
+    println!("Date,Size,Type,Mode,UID,GID,Meta,File Name");
+    for (ts, entries_at_ts) in entries.iter() {
+        let timestamp = NaiveDateTime::from_timestamp(*ts, 0);
+        let timestamp = timestamp.format("%a %b %d %Y %T");
+        for line in entries_at_ts {
+            println!(
+                "{},{},{},{},0,0,{},\"{}\"",
+                timestamp,
+                line.line.get_size(),
+                line.flags,
+                line.line.get_mode(),
+                line.line.get_inode(),
+                line.line.get_name()
+            );
+        }
+    }
 }
