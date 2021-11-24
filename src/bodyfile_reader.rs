@@ -36,7 +36,7 @@ fn worker(mut input: BodyfileSource, tx: Sender<String>) {
 }
 
 impl BodyfileReader {
-    pub fn from(filename: Option<&str>) -> Result<Self> {
+    pub fn from(filename: &Option<String>) -> Result<Self> {
         let input = match filename {
             None => BodyfileSource::Stdin,
             Some(filename) =>  {

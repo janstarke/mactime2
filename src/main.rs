@@ -1,20 +1,8 @@
 use anyhow::Result;
 use clap::{App, Arg};
 use simplelog::{TermLogger, LevelFilter, Config, TerminalMode, ColorChoice};
-use chrono::{NaiveDateTime, LocalResult};
-use std::collections::BTreeMap;
-use std::collections::BTreeSet;
-use chrono_tz::{TZ_VARIANTS, Tz};
-use chrono::offset::TimeZone;
-
-mod filter;
-mod bodyfile_reader;
-mod bodyfile_decoder;
-mod bodyfile_sorter;
-use filter::*;
-use bodyfile_reader::*;
-use bodyfile_decoder::*;
-use bodyfile_sorter::*;
+use chrono_tz::TZ_VARIANTS;
+use libmactime2::{Mactime2Application, OutputFormat};
 
 fn main() -> Result<()> {
     let _ = TermLogger::init(
@@ -51,37 +39,30 @@ fn main() -> Result<()> {
         );
 
     let matches = app.get_matches();
-
-    let src_zone: Tz = match matches.value_of("SRC_ZONE") {
-        Some("list") => { display_zones(); return Ok(()); },
-        Some(tz) => tz.parse().unwrap(),
-        None => Tz::UTC
-    };
-    let dst_zone: Tz = match matches.value_of("DST_ZONE") {
-        Some("list") => { display_zones(); return Ok(()); },
-        Some(tz) => tz.parse().unwrap(),
-        None => Tz::UTC
-    };
-
-    let mut reader = BodyfileReader::from(matches.value_of("BODYFILE"))?;
-    let mut decoder = BodyfileDecoder::with_receiver(reader.get_receiver());
-    let mut sorter = BodyfileSorter::with_receiver(decoder.get_receiver());
-
-    let _ = reader.join();
-    let _ = decoder.join();
-    match sorter.join() {
-        Ok(entries) => {
-            if matches.is_present("CSV_FORMAT") {
-                display_csv(entries, &src_zone, &dst_zone)
-            } else {
-                display_txt(entries, &src_zone, &dst_zone)
-            }
-        }
-        Err(why) => {
-            log::error!("{:?}", why);
-        }
+    let mut app = Mactime2Application::new();
+    if let Some(bodyfile) = matches.value_of("BODYFILE") {
+        app = app.with_bodyfile(bodyfile.to_owned());
     }
-    Ok(())
+
+    match matches.value_of("SRC_ZONE") {
+        Some("list") => { display_zones(); return Ok(()); },
+        Some(tz) => { app = app.with_src_zone(tz.parse().unwrap()); }
+        None => (),
+    };
+
+    match matches.value_of("DST_ZONE") {
+        Some("list") => { display_zones(); return Ok(()); },
+        Some(tz) => { app = app.with_dst_zone(tz.parse().unwrap()); }
+        None => (),
+    };
+
+    app = app.with_format(if matches.is_present("CSV_FORMAT") {
+        OutputFormat::CSV
+    } else {
+        OutputFormat::TXT
+    });
+
+    app.run()
 }
 
 fn display_zones() {
@@ -90,52 +71,3 @@ fn display_zones() {
     }
 }
 
-fn format_date(unix_ts: i64, src_zone: &Tz, dst_zone: &Tz) -> String {
-    let src_timestamp = match src_zone.from_local_datetime(&NaiveDateTime::from_timestamp(unix_ts, 0)) {
-        LocalResult::None => { return "INVALID DATETIME".to_owned(); }
-        LocalResult::Single(t) => t,
-        LocalResult::Ambiguous(t1, _t2) => t1
-    };
-    let dst_timestamp = src_timestamp.with_timezone(dst_zone);
-    dst_timestamp.to_rfc3339()
-}
-
-fn display_csv(entries: BTreeMap<i64, BTreeSet<ListEntry>>, src_zone: &Tz, dst_zone: &Tz) {
-    println!("Date,Size,Type,Mode,UID,GID,Meta,File Name");
-    for (ts, entries_at_ts) in entries.iter() {
-        let timestamp = format_date(*ts, src_zone, dst_zone);
-        for line in entries_at_ts {
-            println!(
-                "{},{},{},{},{},{},{},\"{}\"",
-                timestamp,
-                line.line.get_size(),
-                line.flags,
-                line.line.get_mode(),
-                line.line.get_uid(),
-                line.line.get_gid(),
-                line.line.get_inode(),
-                line.line.get_name()
-            );
-        }
-    }
-}
-
-fn display_txt(entries: BTreeMap<i64, BTreeSet<ListEntry>>, src_zone: &Tz, dst_zone: &Tz) {
-    for (ts, entries_at_ts) in entries.iter() {
-        let mut timestamp = format_date(*ts, src_zone, dst_zone);
-        for line in entries_at_ts {
-            println!(
-                "{} {:>8} {} {:<12} {:<7} {:<7} {} {}",
-                timestamp,
-                line.line.get_size(),
-                line.flags,
-                line.line.get_mode(),
-                line.line.get_uid(),
-                line.line.get_gid(),
-                line.line.get_inode(),
-                line.line.get_name()
-            );
-            timestamp = "                         ".to_owned();
-        }
-    }
-}
