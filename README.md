@@ -1,3 +1,6 @@
+![Crates.io](https://img.shields.io/crates/v/mactime2)
+![Crates.io (latest)](https://img.shields.io/crates/dv/mactime2)
+![Codecov](https://img.shields.io/codecov/c/github/janstarke/mactime2)
 # mactime2
 Replacement for `mactime`
 
