@@ -9,8 +9,14 @@ use std::sync::Arc;
 use std::sync::mpsc::Receiver;
 use std::thread::JoinHandle;
 
+pub trait Mactime2Writer: Send {
+    fn write(&self, timestamp: &i64, entry: &ListEntry);
+}
+
 pub struct BodyfileSorter {
-    worker: Option<JoinHandle<BTreeMap<i64, BTreeSet<ListEntry>>>>,
+    worker: Option<JoinHandle<()>>,
+    receiver: Option<Receiver<Bodyfile3Line>>,
+    output: Option<Box<dyn Mactime2Writer>>
 }
 
 bitflags! {
@@ -96,13 +102,32 @@ fn insert_timestamp(
 }
 
 impl BodyfileSorter {
-    pub fn with_receiver(decoder: Receiver<Bodyfile3Line>) -> Self {
+    pub fn new() -> Self {
         Self {
-            worker: Some(std::thread::spawn(move || Self::worker(decoder))),
+            worker: None,
+            receiver: None,
+            output: None
         }
     }
 
-    fn worker(decoder: Receiver<Bodyfile3Line>) -> BTreeMap<i64, BTreeSet<ListEntry>> {
+    pub fn run(&mut self) {
+        let receiver = self.receiver.take().expect("no receiver provided; please call with_receiver()");
+        let output = self.output.take().expect("no output provided; please call with_output()");
+        self.worker = Some(
+            std::thread::spawn(move || Self::worker(receiver, output)));
+    }
+
+    pub fn with_receiver(mut self, decoder: Receiver<Bodyfile3Line>) -> Self {
+        self.receiver = Some(decoder);
+        self
+    }
+
+    pub fn with_output(mut self, output: Box<dyn Mactime2Writer>) -> Self {
+        self.output = Some(output);
+        self
+    }
+
+    fn worker(decoder: Receiver<Bodyfile3Line>, output: Box<dyn Mactime2Writer>) {
         let mut entries: BTreeMap<i64, BTreeSet<ListEntry>> = BTreeMap::new();
 
         loop {
@@ -161,12 +186,16 @@ impl BodyfileSorter {
             }
         }
 
-        entries
+        for (ts, entries_at_ts) in entries.iter() {
+            for line in entries_at_ts {
+                output.write(&ts, &line);
+            }
+        }
     }
 }
 
-impl Joinable<BTreeMap<i64, BTreeSet<ListEntry>>> for BodyfileSorter {
-    fn join(&mut self) -> std::thread::Result<BTreeMap<i64, BTreeSet<ListEntry>>> {
+impl Joinable<()> for BodyfileSorter {
+    fn join(&mut self) -> std::thread::Result<()> {
         self.worker.take().unwrap().join()
     }
 }
