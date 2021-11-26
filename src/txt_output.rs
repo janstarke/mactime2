@@ -41,3 +41,61 @@ impl Mactime2Writer for TxtOutput {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rand;
+    use super::TxtOutput;
+    use chrono::DateTime;
+    use chrono_tz::TZ_VARIANTS;
+    use chrono_tz::Tz;
+    use std::sync::Arc;
+    use bodyfile::Bodyfile3Line;
+    use crate::bodyfile_sorter::{MACBFlags, ListEntry, Mactime2Writer};
+
+    fn random_tz() -> Tz {
+        let index = rand::random::<usize>() % TZ_VARIANTS.len();
+        TZ_VARIANTS[index]
+    }
+
+    #[allow(non_snake_case)]
+    #[test]
+    fn test_correct_ts_UTC() {
+        let output = TxtOutput::new(Tz::UTC, Tz::UTC);
+        for _ in 1..10 {
+            let unix_ts = rand::random::<u32>() as i64;
+            let bf_line = Bodyfile3Line::new().with_crtime(unix_ts);
+            let entry = ListEntry {
+                flags: MACBFlags::B,
+                line: Arc::new(bf_line)
+            };
+
+            let out_line = output.fmt(&unix_ts, &entry);
+            let out_ts = out_line.split(' ').into_iter().next().unwrap();
+            let rfc3339 = DateTime::parse_from_rfc3339(out_ts).expect(out_ts);
+            assert_eq!(unix_ts, rfc3339.timestamp(), "Timestamp {} converted to '{}' and back to {}", unix_ts, out_ts, rfc3339.timestamp());
+        }
+    }
+
+    #[allow(non_snake_case)]
+    #[test]
+    fn test_correct_ts_random_tz() {
+        for _ in 1..100 {
+            let tz = random_tz();
+            let output = TxtOutput::new(tz, tz);
+            let unix_ts = rand::random::<u32>() as i64;
+            let bf_line = Bodyfile3Line::new().with_crtime(unix_ts);
+            let entry = ListEntry {
+                flags: MACBFlags::B,
+                line: Arc::new(bf_line)
+            };
+
+            let out_line = output.fmt(&unix_ts, &entry);
+            let out_ts = out_line.split(' ').into_iter().next().unwrap();
+            let rfc3339 = DateTime::parse_from_rfc3339(out_ts).expect(out_ts);
+            let offset = rfc3339.offset().local_minus_utc() as i64;
+            let calculated_ts = rfc3339.timestamp() + offset;
+            assert_eq!(unix_ts, calculated_ts, "Timestamp {} converted to '{}' and back to {} (offset was {}s)", unix_ts, out_ts, calculated_ts, offset);
+        }
+    }
+}
