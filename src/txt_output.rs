@@ -20,7 +20,7 @@ impl TxtOutput {
 }
 
 impl Mactime2Writer for TxtOutput {
-    fn write(&self, timestamp: &i64, entry: &ListEntry) {
+    fn fmt(&self, timestamp: &i64, entry: &ListEntry) -> String {
         let ts = if *timestamp != *self.last_ts.0.borrow() {
             *self.last_ts.1.borrow_mut() = Mactime2Application::format_date(*timestamp, &self.src_zone, &self.dst_zone);
             *self.last_ts.0.borrow_mut() = *timestamp;
@@ -28,7 +28,7 @@ impl Mactime2Writer for TxtOutput {
         } else {
             self.empty_ts.borrow()
         };
-        println!(
+        format!(
             "{} {:>8} {} {:<12} {:<7} {:<7} {} {}",
             ts,
             entry.line.get_size(),
@@ -38,6 +38,6 @@ impl Mactime2Writer for TxtOutput {
             entry.line.get_gid(),
             entry.line.get_inode(),
             entry.line.get_name()
-        );
+        )
     }
 }

@@ -10,7 +10,10 @@ use std::sync::mpsc::Receiver;
 use std::thread::JoinHandle;
 
 pub trait Mactime2Writer: Send {
-    fn write(&self, timestamp: &i64, entry: &ListEntry);
+    fn write(&self, timestamp: &i64, entry: &ListEntry) {
+        println!("{}", self.fmt(timestamp, entry));
+    }
+    fn fmt(&self, timestamp: &i64, entry: &ListEntry) -> String;
 }
 
 pub struct BodyfileSorter {

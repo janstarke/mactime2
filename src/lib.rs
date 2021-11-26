@@ -2,7 +2,6 @@ use anyhow::Result;
 use chrono::offset::TimeZone;
 use chrono::{LocalResult, NaiveDateTime};
 use chrono_tz::Tz;
-use std::cell::RefCell;
 
 pub mod bodyfile_decoder;
 pub mod bodyfile_reader;

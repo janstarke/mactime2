@@ -42,9 +42,10 @@ impl EventCatcher {
 }
 
 impl Mactime2Writer for EventCatcher {
-    fn write(&self, timestamp: &i64, _entry: &ListEntry) {
+    fn fmt(&self, timestamp: &i64, _entry: &ListEntry) -> String {
         assert_le!(*self.last_timestamp.borrow(), *timestamp);
 
         *self.last_timestamp.borrow_mut() = *timestamp;
+        "".to_owned()
     }
 }
