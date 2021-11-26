@@ -18,8 +18,81 @@ fn test_sorted() {
     sorter.run();
     for _day in 0..364 {
         for _hour in 0..23 {
-            let ts = rand::random::<u32>() as i64;
-            let bf = bodyfile::Bodyfile3Line::new().with_crtime(ts);
+            let bf = bodyfile::Bodyfile3Line::new()
+                .with_atime(random_ts());
+            tx.send(bf.to_string()).unwrap();
+
+            let bf = bodyfile::Bodyfile3Line::new()
+                .with_mtime(random_ts());
+            tx.send(bf.to_string()).unwrap();
+
+            let bf = bodyfile::Bodyfile3Line::new()
+                .with_ctime(random_ts());
+            tx.send(bf.to_string()).unwrap();
+
+            let bf = bodyfile::Bodyfile3Line::new()
+                .with_crtime(random_ts());
+            tx.send(bf.to_string()).unwrap();
+
+            let bf = bodyfile::Bodyfile3Line::new()
+                .with_atime(random_ts())
+                .with_mtime(random_ts());
+            tx.send(bf.to_string()).unwrap();
+
+            let bf = bodyfile::Bodyfile3Line::new()
+                .with_atime(random_ts())
+                .with_ctime(random_ts());
+            tx.send(bf.to_string()).unwrap();
+
+            let bf = bodyfile::Bodyfile3Line::new()
+                .with_atime(random_ts())
+                .with_crtime(random_ts());
+            tx.send(bf.to_string()).unwrap();
+
+            let bf = bodyfile::Bodyfile3Line::new()
+                .with_mtime(random_ts())
+                .with_ctime(random_ts());
+            tx.send(bf.to_string()).unwrap();
+
+            let bf = bodyfile::Bodyfile3Line::new()
+                .with_mtime(random_ts())
+                .with_crtime(random_ts());
+            tx.send(bf.to_string()).unwrap();
+
+            let bf = bodyfile::Bodyfile3Line::new()
+                .with_ctime(random_ts())
+                .with_crtime(random_ts());
+            tx.send(bf.to_string()).unwrap();
+
+            let bf = bodyfile::Bodyfile3Line::new()
+                .with_atime(random_ts())
+                .with_mtime(random_ts())
+                .with_ctime(random_ts());
+            tx.send(bf.to_string()).unwrap();
+
+            let bf = bodyfile::Bodyfile3Line::new()
+                .with_atime(random_ts())
+                .with_mtime(random_ts())
+                .with_crtime(random_ts());
+            tx.send(bf.to_string()).unwrap();
+
+            let bf = bodyfile::Bodyfile3Line::new()
+                .with_atime(random_ts())
+                .with_ctime(random_ts())
+                .with_crtime(random_ts());
+            tx.send(bf.to_string()).unwrap();
+
+            let bf = bodyfile::Bodyfile3Line::new()
+                .with_mtime(random_ts())
+                .with_ctime(random_ts())
+                .with_crtime(random_ts());
+            tx.send(bf.to_string()).unwrap();
+
+            let bf = bodyfile::Bodyfile3Line::new()
+                .with_atime(random_ts())
+                .with_mtime(random_ts())
+                .with_ctime(random_ts())
+                .with_crtime(random_ts());
             tx.send(bf.to_string()).unwrap();
         }
     }
@@ -27,6 +100,10 @@ fn test_sorted() {
 
     decoder.join().unwrap();
     sorter.join().unwrap();
+}
+
+fn random_ts() -> i64 {
+    rand::random::<u32>() as i64
 }
 
 struct EventCatcher {
