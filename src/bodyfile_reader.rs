@@ -5,6 +5,9 @@ use std::sync::mpsc::{self, Sender, Receiver};
 use std::thread::{self, JoinHandle};
 use crate::Joinable;
 
+#[cfg(feature = "gzip")]
+use flate2::read::GzDecoder;
+
 pub struct BodyfileReader {
     worker: Option<JoinHandle<()>>,
     rx: Option<Receiver<String>>
@@ -12,7 +15,7 @@ pub struct BodyfileReader {
 
 enum BodyfileSource {
     Stdin,
-    File(BufReader<File>),
+    File(Box<dyn BufRead + Send>),
 }
 
 fn worker(mut input: BodyfileSource, tx: Sender<String>) {
@@ -41,7 +44,16 @@ impl BodyfileReader {
             None => BodyfileSource::Stdin,
             Some(filename) =>  {
                 if filename == "-" { BodyfileSource::Stdin }
-                else {BodyfileSource::File(BufReader::new(File::open(filename)?))
+                else {
+                    let file = File::open(filename)?;
+
+                    #[cfg(not(feature = "gzip"))]
+                    let reader: Box<dyn BufRead> = Box::new(BufReader::new(file));
+
+                    #[cfg(feature = "gzip")]
+                    let reader = Self::open_gzip(filename, file);
+
+                    BodyfileSource::File(reader)
                 }
             }
         };
@@ -52,6 +64,15 @@ impl BodyfileReader {
             worker: Some(worker),
             rx: Some(rx)
         })
+    }
+
+    #[cfg(feature = "gzip")]
+    fn open_gzip(filename: &str, file: File) -> Box<dyn BufRead + Send> {
+        if filename.ends_with(".gz") {
+            Box::new(BufReader::new(GzDecoder::new(file)))
+        } else {
+            Box::new(BufReader::new(file))
+        }
     }
 
     pub fn get_receiver(&mut self) -> Receiver<String> {

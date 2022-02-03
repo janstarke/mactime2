@@ -11,6 +11,11 @@ fn main() -> Result<()> {
         TerminalMode::Stderr,
         ColorChoice::Auto);
 
+    #[cfg(feature = "gzip")]
+    let bodyfile_help = "path to bodyfile of '-' for stdin (files ending with .gz will be treated as being gzipped)";
+    #[cfg(not(feature = "gzip"))]
+    let bodyfile_help = "path to bodyfile of '-' for stdin";
+
     let app = App::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
         .author(env!("CARGO_PKG_AUTHORS"))
@@ -18,7 +23,7 @@ fn main() -> Result<()> {
         .arg(
             Arg::with_name("BODYFILE")
                 .short("b")
-                .help("path to bodyfile of '-' for stdin")
+                .help(bodyfile_help)
                 .required(false)
                 .multiple(false)
                 .takes_value(true),
