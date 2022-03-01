@@ -26,6 +26,7 @@ pub struct Mactime2Application {
     bodyfile: Option<String>,
     src_zone: Tz,
     dst_zone: Tz,
+    strict_mode: bool,
 }
 
 impl Mactime2Application {
@@ -35,6 +36,7 @@ impl Mactime2Application {
             bodyfile: None,
             src_zone: Tz::UTC,
             dst_zone: Tz::UTC,
+            strict_mode: false,
         }
     }
 
@@ -58,10 +60,19 @@ impl Mactime2Application {
         self
     }
 
+    pub fn with_strict_mode(mut self) -> Self {
+        self.strict_mode = true;
+        self
+    }
+
     pub fn run(&self) -> Result<()> {
+        let options = RunOptions {
+            strict_mode: self.strict_mode,
+        };
+
         let mut reader = BodyfileReader::from(&self.bodyfile)?;
-        let mut decoder = BodyfileDecoder::with_receiver(reader.get_receiver());
-        let mut sorter = BodyfileSorter::new().with_receiver(decoder.get_receiver());
+        let mut decoder = BodyfileDecoder::with_receiver(reader.get_receiver(), options);
+        let mut sorter = BodyfileSorter::new().with_receiver(decoder.get_receiver(), options);
 
         sorter = sorter.with_output(match self.format {
             OutputFormat::CSV => Box::new(CsvOutput::new(self.src_zone, self.dst_zone)),

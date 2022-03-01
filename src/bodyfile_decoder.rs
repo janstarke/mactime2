@@ -1,4 +1,4 @@
-use crate::{Filter, Joinable};
+use crate::{Filter, Joinable, RunOptions};
 use std::sync::mpsc::{self, Sender, Receiver};
 use std::thread::{JoinHandle};
 use bodyfile::Bodyfile3Line;
@@ -6,21 +6,21 @@ use std::convert::TryFrom;
 
 pub struct BodyfileDecoder {
     worker: Option<JoinHandle<()>>,
-    rx: Option<Receiver<Bodyfile3Line>>
+    rx: Option<Receiver<Bodyfile3Line>>,
 }
 
 impl Filter<String, Bodyfile3Line> for BodyfileDecoder {
-    fn with_receiver(reader: Receiver<String>) -> Self {
+    fn with_receiver(reader: Receiver<String>, options: RunOptions) -> Self {
         let (tx, rx): (Sender<Bodyfile3Line>, Receiver<Bodyfile3Line>) = mpsc::channel();
         Self {
             worker: Some(std::thread::spawn(move || {
-                Self::worker(reader, tx)
+                Self::worker(reader, tx, options)
             })),
-            rx: Some(rx)
+            rx: Some(rx),
         }
     }
 
-    fn worker(reader: Receiver<String>, tx: Sender<Bodyfile3Line>) {
+    fn worker(reader: Receiver<String>, tx: Sender<Bodyfile3Line>, options: RunOptions) {
         loop {
             let mut line = match reader.recv() {
                 Err(_) => {break;}
@@ -32,7 +32,14 @@ impl Filter<String, Bodyfile3Line> for BodyfileDecoder {
 
             let bf_line = match Bodyfile3Line::try_from(line.as_ref()) {
                 Err(e) => {
-                    log::warn!("bodyfile parser error: {}", e);
+                    if options.strict_mode {
+                        log::warn!("bodyfile parser error: {}", e);
+                        panic!("failed while parsing: {:?}", line);
+                    } else {
+                        log::warn!("bodyfile parser error: {}", e);
+                        #[cfg(debug_assertions)]
+                        log::warn!("failed line was: {:?}", line);
+                    }
                     continue;
                 }
                 Ok(l) => l

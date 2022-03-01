@@ -10,9 +10,13 @@ extern crate more_asserts;
 fn test_sorted() {
     let (tx, rx): (Sender<String>, Receiver<String>) = mpsc::channel();
 
-    let mut decoder = BodyfileDecoder::with_receiver(rx);
+    let options = RunOptions {
+        strict_mode: false,
+    };
+
+    let mut decoder = BodyfileDecoder::with_receiver(rx, options);
     let mut sorter = BodyfileSorter::new()
-        .with_receiver(decoder.get_receiver())
+        .with_receiver(decoder.get_receiver(), options)
         .with_output(Box::new(EventCatcher::new()));
 
     sorter.run();

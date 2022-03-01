@@ -1,6 +1,6 @@
 [package]
 name = "mactime2"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2018"
 authors = ["Jan Starke <Jan.Starke@t-systems.com>"]
 description = "Replacement for `mactime`"
@@ -17,7 +17,7 @@ name = "mactime2"
 path = "src/main.rs"
 
 [dependencies]
-bodyfile="0.1"
+bodyfile=">=0.1.4"
 clap = "2"
 anyhow = "1.0"
 simplelog = "0.10"

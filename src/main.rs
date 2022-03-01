@@ -36,12 +36,21 @@ fn main() -> Result<()> {
                 .short("t")
                 .takes_value(true)
                 .help("name of offset of destination timezone (or 'list' to display all possible values")
+        ).arg(
+            Arg::with_name("STRICT_MODE")
+                .long("strict")
+                .takes_value(false)
+                .help("strict mode: abort if an error occurs")
         );
 
     let matches = app.get_matches();
     let mut app = Mactime2Application::new();
     if let Some(bodyfile) = matches.value_of("BODYFILE") {
         app = app.with_bodyfile(bodyfile.to_owned());
+    }
+
+    if matches.is_present("STRICT_MODE") {
+        app = app.with_strict_mode();
     }
 
     match matches.value_of("SRC_ZONE") {

@@ -7,7 +7,7 @@ Replacement for `mactime`
 ## Changes to original `mactime`
 
  - no implicit conversion of timestamp to local date/time
- - possibility of explicit timezone corrrection
+ - possibility of explicit timezone correction
  - other datetime format (RFC3339) which always includes the timezone offset
  - faster
 
@@ -20,7 +20,7 @@ cargo install mactime2
 # Usage
 
 ```
-mactime2 0.1.0
+mactime2 0.2.0
 Jan Starke <Jan.Starke@t-systems.com>
 Replacement for `mactime`
 
@@ -29,6 +29,7 @@ USAGE:
 
 FLAGS:
     -d               output as CSV instead of TXT
+        --strict     strict mode: abort if an error occurs
     -h, --help       Prints help information
     -V, --version    Prints version information
 

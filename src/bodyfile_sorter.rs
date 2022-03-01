@@ -1,4 +1,4 @@
-use crate::Joinable;
+use crate::{Joinable, RunOptions};
 use bitflags::bitflags;
 use bodyfile::Bodyfile3Line;
 use std::cmp::Ordering;
@@ -120,7 +120,7 @@ impl BodyfileSorter {
             std::thread::spawn(move || Self::worker(receiver, output)));
     }
 
-    pub fn with_receiver(mut self, decoder: Receiver<Bodyfile3Line>) -> Self {
+    pub fn with_receiver(mut self, decoder: Receiver<Bodyfile3Line>, _: RunOptions) -> Self {
         self.receiver = Some(decoder);
         self
     }
