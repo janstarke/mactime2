@@ -42,6 +42,7 @@ impl fmt::Display for MACBFlags {
     }
 }
 
+#[derive(Debug)]
 pub struct ListEntry {
     pub flags: MACBFlags,
     pub line: Arc<Bodyfile3Line>,
@@ -142,10 +143,10 @@ impl BodyfileSorter {
             });
 
             // # we need *some* value in mactimes!
-            if line.get_mtime() == 0
-                && line.get_atime() == 0
-                && line.get_ctime() == 0
-                && line.get_crtime() == 0
+            if line.get_mtime() == -1
+                && line.get_atime() == -1
+                && line.get_ctime() == -1
+                && line.get_crtime() == -1
             {
                 continue;
             }

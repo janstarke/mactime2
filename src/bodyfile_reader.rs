@@ -1,9 +1,10 @@
 use anyhow::Result;
-use std::io::{self, BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read, stdin};
 use std::fs::File;
 use std::sync::mpsc::{self, Sender, Receiver};
 use std::thread::{self, JoinHandle};
 use crate::Joinable;
+use encoding_rs_io::DecodeReaderBytesBuilder;
 
 #[cfg(feature = "gzip")]
 use flate2::read::GzDecoder;
@@ -15,17 +16,21 @@ pub struct BodyfileReader {
 
 enum BodyfileSource {
     Stdin,
-    File(Box<dyn BufRead + Send>),
+    File(Box<dyn Read + Send>),
 }
 
-fn worker(mut input: BodyfileSource, tx: Sender<String>) {
+fn worker<R: Read + Send>(input: R, tx: Sender<String>) {
     let mut line_ctr = 1;
+
+    let drb = DecodeReaderBytesBuilder::new()
+        .encoding(Some(encoding_rs::UTF_8))
+        .utf8_passthru(true)
+        .build(input);
+    let mut reader = BufReader::new(drb);
+
     loop {
         let mut line = String::new();
-        let size = match &mut input {
-            BodyfileSource::Stdin => io::stdin().read_line(&mut line),
-            BodyfileSource::File(f) => f.read_line(&mut line)
-        };
+        let size = reader.read_line(&mut line);
 
         match size {
             Err(why) => {
@@ -54,7 +59,7 @@ impl BodyfileReader {
                     let file = File::open(filename)?;
 
                     #[cfg(not(feature = "gzip"))]
-                    let reader: Box<dyn BufRead> = Box::new(BufReader::new(file));
+                    let reader: Box<dyn BufRead> = Box::new(file);
 
                     #[cfg(feature = "gzip")]
                     let reader = Self::open_gzip(filename, file);
@@ -64,7 +69,10 @@ impl BodyfileReader {
             }
         };
         let (tx, rx): (Sender<String>, Receiver<String>) = mpsc::channel();
-        let worker = thread::spawn(move || {worker(input, tx);});
+        let worker = match input {
+            BodyfileSource::Stdin => thread::spawn(move || {worker(stdin(), tx);}),
+            BodyfileSource::File(f) => thread::spawn(move || {worker(f, tx);}),
+        };
 
         Ok(Self {
             worker: Some(worker),
@@ -73,11 +81,11 @@ impl BodyfileReader {
     }
 
     #[cfg(feature = "gzip")]
-    fn open_gzip(filename: &str, file: File) -> Box<dyn BufRead + Send> {
+    fn open_gzip(filename: &str, file: File) -> Box<dyn Read + Send> {
         if filename.ends_with(".gz") {
-            Box::new(BufReader::new(GzDecoder::new(file)))
+            Box::new(GzDecoder::new(file))
         } else {
-            Box::new(BufReader::new(file))
+            Box::new(file)
         }
     }
 
