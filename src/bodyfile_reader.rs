@@ -19,6 +19,7 @@ enum BodyfileSource {
 }
 
 fn worker(mut input: BodyfileSource, tx: Sender<String>) {
+    let mut line_ctr = 1;
     loop {
         let mut line = String::new();
         let size = match &mut input {
@@ -27,14 +28,19 @@ fn worker(mut input: BodyfileSource, tx: Sender<String>) {
         };
 
         match size {
-            Err(_) => {break;}
+            Err(why) => {
+                eprintln!("IO Error in line {}: {:?}", line_ctr, why);
+                break;
+            }
             Ok(s) => {
                 if s == 0 { break; }
 
                 if let Err(_) = tx.send(line) {
                     break;
-                }}
+                }
+            }
         }
+        line_ctr += 1;
     }
 }
 
