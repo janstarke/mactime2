@@ -13,7 +13,7 @@ impl TxtOutput {
     pub fn new(src_zone: Tz, dst_zone: Tz) -> Self {
         Self {
             src_zone, dst_zone,
-            last_ts: (RefCell::new(-1), RefCell::new("".to_owned())),
+            last_ts: (RefCell::new(i64::MIN), RefCell::new("".to_owned())),
             empty_ts: RefCell::new("                         ".to_owned())
         }
     }

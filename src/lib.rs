@@ -87,15 +87,19 @@ impl Mactime2Application {
     }
 
     pub fn format_date(unix_ts: i64, src_zone: &Tz, dst_zone: &Tz) -> String {
-        let src_timestamp =
-            match src_zone.from_local_datetime(&NaiveDateTime::from_timestamp(unix_ts, 0)) {
-                LocalResult::None => {
-                    return "INVALID DATETIME".to_owned();
-                }
-                LocalResult::Single(t) => t,
-                LocalResult::Ambiguous(t1, _t2) => t1,
-            };
-        let dst_timestamp = src_timestamp.with_timezone(dst_zone);
-        dst_timestamp.to_rfc3339()
+        if unix_ts >= 0 {
+            let src_timestamp =
+                match src_zone.from_local_datetime(&NaiveDateTime::from_timestamp(unix_ts, 0)) {
+                    LocalResult::None => {
+                        return "INVALID DATETIME".to_owned();
+                    }
+                    LocalResult::Single(t) => t,
+                    LocalResult::Ambiguous(t1, _t2) => t1,
+                };
+            let dst_timestamp = src_timestamp.with_timezone(dst_zone);
+            dst_timestamp.to_rfc3339()
+        } else {
+            "0000-00-00T00:00:00+00:00".to_owned()
+        }
     }
 }

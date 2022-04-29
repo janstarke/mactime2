@@ -80,9 +80,8 @@ fn insert_timestamp(
     } else if flag.contains(MACBFlags::B) {
         line.get_crtime()
     } else {
-        panic!("no flags set")
+        -1
     };
-    assert_ne!(timestamp, -1);
 
     match entries.get_mut(&timestamp) {
         None => {
@@ -148,6 +147,7 @@ impl BodyfileSorter {
                 && line.get_ctime() == -1
                 && line.get_crtime() == -1
             {
+                insert_timestamp(&mut entries, MACBFlags::NONE, Arc::clone(&line));
                 continue;
             }
 
