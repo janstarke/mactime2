@@ -15,6 +15,8 @@ pub use bodyfile_sorter::*;
 pub use filter::*;
 use csv_output::*;
 use txt_output::*;
+pub mod error;
+pub use error::*;
 
 pub enum OutputFormat {
     CSV,
@@ -82,7 +84,7 @@ impl Mactime2Application {
 
         let _ = reader.join();
         let _ = decoder.join();
-        let _ = sorter.join();
+        sorter.join().unwrap()?;
         Ok(())
     }
 

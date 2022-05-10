@@ -1,9 +1,12 @@
+use crate::MactimeError;
 use crate::{Joinable, RunOptions};
 use bitflags::bitflags;
 use bodyfile::Bodyfile3Line;
+use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::collections::HashSet;
 use std::fmt;
 use std::sync::Arc;
 use std::sync::mpsc::Receiver;
@@ -17,7 +20,7 @@ pub trait Mactime2Writer: Send {
 }
 
 pub struct BodyfileSorter {
-    worker: Option<JoinHandle<()>>,
+    worker: Option<JoinHandle<Result<(),MactimeError>>>,
     receiver: Option<Receiver<Bodyfile3Line>>,
     output: Option<Box<dyn Mactime2Writer>>
 }
@@ -130,8 +133,9 @@ impl BodyfileSorter {
         self
     }
 
-    fn worker(decoder: Receiver<Bodyfile3Line>, output: Box<dyn Mactime2Writer>) {
+    fn worker(decoder: Receiver<Bodyfile3Line>, output: Box<dyn Mactime2Writer>) -> Result<(), MactimeError> {
         let mut entries: BTreeMap<i64, BTreeSet<ListEntry>> = BTreeMap::new();
+        let mut names: HashSet<String> = HashSet::new();
 
         loop {
             let line = Arc::new(match decoder.recv() {
@@ -141,7 +145,16 @@ impl BodyfileSorter {
                 Ok(l) => l,
             });
 
-            // # we need *some* value in mactimes!
+            // each name MUST occur only once
+            {
+                let bf: &Bodyfile3Line = line.borrow();
+                if names.contains(bf.get_name()) {
+                    return Err(MactimeError::AmbiguousFilename(bf.get_name().to_owned()))
+                }
+                names.insert(bf.get_name().to_owned());
+            } // delete the borrow to line
+
+            // we need *some* value in mactimes!
             if line.get_mtime() == -1
                 && line.get_atime() == -1
                 && line.get_ctime() == -1
@@ -195,11 +208,12 @@ impl BodyfileSorter {
                 output.write(&ts, &line);
             }
         }
+        Ok(())
     }
 }
 
-impl Joinable<()> for BodyfileSorter {
-    fn join(&mut self) -> std::thread::Result<()> {
+impl Joinable<Result<(), MactimeError>> for BodyfileSorter {
+    fn join(&mut self) -> std::thread::Result<Result<(), MactimeError>> {
         self.worker.take().unwrap().join()
     }
 }
