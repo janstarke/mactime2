@@ -1,6 +1,6 @@
 [package]
 name = "mactime2"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2018"
 authors = ["Jan Starke <Jan.Starke@t-systems.com>"]
 description = "Replacement for `mactime`"

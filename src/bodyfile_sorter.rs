@@ -149,7 +149,8 @@ impl BodyfileSorter {
             {
                 let bf: &Bodyfile3Line = line.borrow();
                 if names.contains(bf.get_name()) {
-                    return Err(MactimeError::AmbiguousFilename(bf.get_name().to_owned()))
+                    log::warn!("ambigious file name: '{}'", bf.get_name());
+                    //return Err(MactimeError::AmbiguousFilename(bf.get_name().to_owned()))
                 }
                 names.insert(bf.get_name().to_owned());
             } // delete the borrow to line
