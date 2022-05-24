@@ -197,9 +197,9 @@ impl BodyfileSorter {
                     flags[3] |= MACBFlags::B;
                 }
             }
-            for flag in flags {
-                if flag != MACBFlags::NONE {
-                    insert_timestamp(&mut entries, flag, Arc::clone(&line));
+            for flag in flags.iter() {
+                if flag != &MACBFlags::NONE {
+                    insert_timestamp(&mut entries, *flag, Arc::clone(&line));
                 }
             }
         }
