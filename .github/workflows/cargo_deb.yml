@@ -1,0 +1,13 @@
+name: Deb Static Build
+
+on: 
+  - release
+  - workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Deb Build
+      uses: ebbflow-io/cargo-deb-amd64-ubuntu@1.0
