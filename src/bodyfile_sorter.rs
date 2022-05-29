@@ -54,6 +54,7 @@ pub struct ListEntry {
 impl Eq for ListEntry {}
 impl PartialEq for ListEntry {
     fn eq(&self, other: &Self) -> bool {
+        self.line.get_inode().eq(other.line.get_inode()) &&
         self.line.get_name().eq(other.line.get_name())
     }
 }
@@ -65,7 +66,10 @@ impl PartialOrd for ListEntry {
 
 impl Ord for ListEntry {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.line.get_name().cmp(&other.line.get_name())
+        match self.line.get_name().cmp(&other.line.get_name()) {
+            Ordering::Equal => self.line.get_inode().cmp(&other.line.get_inode()),
+            other => other
+        }
     }
 }
 
@@ -135,7 +139,7 @@ impl BodyfileSorter {
 
     fn worker(decoder: Receiver<Bodyfile3Line>, output: Box<dyn Mactime2Writer>) -> Result<(), MactimeError> {
         let mut entries: BTreeMap<i64, BTreeSet<ListEntry>> = BTreeMap::new();
-        let mut names: HashSet<String> = HashSet::new();
+        let mut names: HashSet<(String,String)> = HashSet::new();
 
         loop {
             let line = Arc::new(match decoder.recv() {
@@ -145,14 +149,14 @@ impl BodyfileSorter {
                 Ok(l) => l,
             });
 
-            // each name MUST occur only once
+            // each name && inode SHOULD occur only once
             {
                 let bf: &Bodyfile3Line = line.borrow();
-                if names.contains(bf.get_name()) {
-                    log::warn!("ambigious file name: '{}'", bf.get_name());
+                if names.contains(&(bf.get_inode().to_owned(), bf.get_name().to_owned())) {
+                    log::warn!("ambigious file name: '{}' and inode '{}'", bf.get_name(), bf.get_inode());
                     //return Err(MactimeError::AmbiguousFilename(bf.get_name().to_owned()))
                 }
-                names.insert(bf.get_name().to_owned());
+                names.insert((bf.get_inode().to_owned(), bf.get_name().to_owned()));
             } // delete the borrow to line
 
             // we need *some* value in mactimes!
