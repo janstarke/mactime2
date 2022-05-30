@@ -29,8 +29,12 @@ fn main() -> Result<()> {
                 .takes_value(true),
         ).arg(
             Arg::with_name("CSV_FORMAT")
-                .short("d")
+                .short("d").long("csv")
                 .help("output as CSV instead of TXT")
+        ).arg(
+            Arg::with_name("JSON_FORMAT")
+                .short("j").long("json")
+                .help("output as JSON instead of TXT")
         ).arg(
             Arg::with_name("SRC_ZONE")
                 .short("f")
@@ -72,6 +76,8 @@ fn main() -> Result<()> {
 
     app = app.with_format(if matches.is_present("CSV_FORMAT") {
         OutputFormat::CSV
+    } else if matches.is_present("JSON_FORMAT") {
+        OutputFormat::JSON
     } else {
         OutputFormat::TXT
     });

@@ -8,12 +8,14 @@ pub mod bodyfile_reader;
 pub mod bodyfile_sorter;
 mod csv_output;
 mod txt_output;
+mod json_output;
 pub mod filter;
 pub use bodyfile_decoder::*;
 pub use bodyfile_reader::*;
 pub use bodyfile_sorter::*;
 pub use filter::*;
 use csv_output::*;
+use json_output::JsonOutput;
 use txt_output::*;
 pub mod error;
 pub use error::*;
@@ -21,6 +23,7 @@ pub use error::*;
 pub enum OutputFormat {
     CSV,
     TXT,
+    JSON,
 }
 
 pub struct Mactime2Application {
@@ -78,7 +81,8 @@ impl Mactime2Application {
 
         sorter = sorter.with_output(match self.format {
             OutputFormat::CSV => Box::new(CsvOutput::new(self.src_zone, self.dst_zone)),
-            OutputFormat::TXT => Box::new(TxtOutput::new(self.src_zone, self.dst_zone))
+            OutputFormat::TXT => Box::new(TxtOutput::new(self.src_zone, self.dst_zone)),
+            OutputFormat::JSON => Box::new(JsonOutput::new(self.src_zone, self.dst_zone))
         });
         sorter.run();
 
