@@ -33,7 +33,7 @@ bin = true
 # version control. To disable this behaviour, give --no-overlay-write-back on
 # the debcargo command line.
 #
-#overlay = "."
+overlay = "."
 
 # Paths from the crate tarball, to exclude from the orig tarball.
 # See https://docs.rs/glob/latest/glob/struct.Pattern.html for syntax
