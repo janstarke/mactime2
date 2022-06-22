@@ -35,6 +35,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.get_release.outputs.upload_url }}
-        asset_path: ./target/x86_64-unknown-linux-musl/debian/mactime2_${{ steps.get_version.outputs.version-without-v }}_amd64.deb
-        asset_name: mactime2_${{ steps.get_version.outputs.version-without-v }}_amd64.deb
+        asset_path: ./target/x86_64-unknown-linux-musl/debian/${{ github.event.repository.name }}_${{ steps.get_version.outputs.version-without-v }}_amd64.deb
+        asset_name: ${{ github.event.repository.name }}_${{ steps.get_version.outputs.version-without-v }}_amd64.deb
         asset_content_type: application/vnd.debian.binary-package
