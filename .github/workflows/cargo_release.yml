@@ -1,7 +1,7 @@
 name: Build static Debian package
 on:
   release:
-    types: [created]
+    types: [published]
 
 jobs:
   build:
@@ -15,16 +15,26 @@ jobs:
       run: |
         echo $RELEASE_VERSION
         echo ${{ env.RELEASE_VERSION }}
-      
+    
+    - name: Get release
+      id: get_release
+      uses: bruceadams/get-release@v1.2.3
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
     - id: get_version
       uses: battila7/get-version-action@v2
     
     - name: build x86_64-unknown-linux-musl
       uses: ebbflow-io/cargo-deb-amd64-ubuntu@1.0
       
-    - name: Upload Debian package as artifact
+    - name: Upload Release Asset
       id: upload-debfile 
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        path: target/x86_64-unknown-linux-musl/debian/mactime2_${{ steps.get_version.outputs.version-without-v }}_amd64.deb
-        name: mactime2_${{ steps.get_version.outputs.version-without-v }}_amd64.deb
+        upload_url: ${{ steps.get_release.outputs.upload_url }}
+        asset_path: ./target/x86_64-unknown-linux-musl/debian/mactime2_${{ steps.get_version.outputs.version-without-v }}_amd64.deb
+        asset_name: mactime2_${{ steps.get_version.outputs.version-without-v }}_amd64.deb
+        asset_content_type: application/vnd.debian.binary-package
