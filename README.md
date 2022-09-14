@@ -20,24 +20,38 @@ cargo install mactime2
 # Usage
 
 ```
-mactime2 1.1.0
+mactime2 2.0.0
 Jan Starke <Jan.Starke@t-systems.com>
 Replacement for `mactime`
 
 USAGE:
-    mactime2 [FLAGS] [OPTIONS]
+    mactime2 [OPTIONS] [BODYFILE]
 
-FLAGS:
-    -d, --csv        output as CSV instead of TXT
-    -j, --json       output as JSON instead of TXT
-        --strict     strict mode: abort if an error occurs
-    -h, --help       Prints help information
-    -V, --version    Prints version information
+ARGS:
+    <BODYFILE>    path to bodyfile of '-' for stdin (files ending with .gz will be treated as
+                  being gzipped) [default: -]
 
 OPTIONS:
-    -b <BODYFILE>        path to bodyfile of '-' for stdin (files ending with .gz will be treated as being gzipped)
-    -t <DST_ZONE>        name of offset of destination timezone (or 'list' to display all possible values
-    -f <SRC_ZONE>        name of offset of source timezone (or 'list' to display all possible values
+    -f, --from-timezone <SRC_ZONE>    name of offset of source timezone (or 'list' to display all
+                                      possible values
+    -t, --to-timezone <DST_ZONE>      name of offset of destination timezone (or 'list' to display
+                                      all possible values
+        --strict                      strict mode: do not only warn, but abort if an error occurs
+    -F, --format <OUTPUT_FORMAT>      output format, if not specified, default value is 'txt'
+                                      [possible values: csv, txt, json]
+    -d                                output as CSV instead of TXT. This is a conveniance option,
+                                      which is identical to `--format=csv` and will be removed in a
+                                      future release. If you specified `--format` and `-d`, the
+                                      latter will be ignored
+    -j                                output as JSON instead of TXT. This is a conveniance option,
+                                      which is identical to `--format=json` and will be removed in a
+                                      future release. If you specified `--format` and `-j`, the
+                                      latter will be ignored
+    -h, --help                        Print help information
+    -q, --quiet                       Less output per occurrence
+    -v, --verbose                     More output per occurrence
+    -V, --version                     Print version information
+
 ```
 
 # Examples
