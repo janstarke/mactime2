@@ -13,6 +13,7 @@ pub mod filter;
 pub use bodyfile_decoder::*;
 pub use bodyfile_reader::*;
 pub use bodyfile_sorter::*;
+use clap::clap_derive::ArgEnum;
 pub use filter::*;
 use csv_output::*;
 use json_output::JsonOutput;
@@ -20,6 +21,7 @@ use txt_output::*;
 pub mod error;
 pub use error::*;
 
+#[derive(ArgEnum, Clone)]
 pub enum OutputFormat {
     CSV,
     TXT,
@@ -35,16 +37,6 @@ pub struct Mactime2Application {
 }
 
 impl Mactime2Application {
-    pub fn new() -> Self {
-        Self {
-            format: OutputFormat::CSV,
-            bodyfile: None,
-            src_zone: Tz::UTC,
-            dst_zone: Tz::UTC,
-            strict_mode: false,
-        }
-    }
-
     pub fn with_format(mut self, format: OutputFormat) -> Self {
         self.format = format;
         self
@@ -77,7 +69,7 @@ impl Mactime2Application {
 
         let mut reader = BodyfileReader::from(&self.bodyfile)?;
         let mut decoder = BodyfileDecoder::with_receiver(reader.get_receiver(), options);
-        let mut sorter = BodyfileSorter::new().with_receiver(decoder.get_receiver(), options);
+        let mut sorter = BodyfileSorter::default().with_receiver(decoder.get_receiver(), options);
 
         sorter = sorter.with_output(match self.format {
             OutputFormat::CSV => Box::new(CsvOutput::new(self.src_zone, self.dst_zone)),
@@ -106,6 +98,18 @@ impl Mactime2Application {
             dst_timestamp.to_rfc3339()
         } else {
             "0000-00-00T00:00:00+00:00".to_owned()
+        }
+    }
+}
+
+impl Default for Mactime2Application {
+    fn default() -> Self {
+        Self {
+            format: OutputFormat::CSV,
+            bodyfile: None,
+            src_zone: Tz::UTC,
+            dst_zone: Tz::UTC,
+            strict_mode: false,
         }
     }
 }
