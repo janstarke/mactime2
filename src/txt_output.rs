@@ -44,7 +44,6 @@ impl Mactime2Writer for TxtOutput {
 
 #[cfg(test)]
 mod tests {
-    use rand;
     use super::TxtOutput;
     use chrono::DateTime;
     use chrono_tz::TZ_VARIANTS;
@@ -72,7 +71,7 @@ mod tests {
 
             let out_line = output.fmt(&unix_ts, &entry);
             let out_line2 = output.fmt(&unix_ts, &entry);
-            assert!(out_line2.starts_with(" "));
+            assert!(out_line2.starts_with(' '));
             
             let out_ts = out_line.split(' ').into_iter().next().unwrap();
             let rfc3339 = DateTime::parse_from_rfc3339(out_ts).expect(out_ts);
@@ -95,7 +94,7 @@ mod tests {
 
             let out_line = output.fmt(&unix_ts, &entry);
             let out_line2 = output.fmt(&unix_ts, &entry);
-            assert!(out_line2.starts_with(" "));
+            assert!(out_line2.starts_with(' '));
 
             let out_ts = out_line.split(' ').into_iter().next().unwrap();
             let rfc3339 = DateTime::parse_from_rfc3339(out_ts).expect(out_ts);

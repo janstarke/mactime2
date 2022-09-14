@@ -40,7 +40,7 @@ fn worker<R: Read + Send>(input: R, tx: Sender<String>) {
             Ok(s) => {
                 if s == 0 { break; }
 
-                if let Err(_) = tx.send(line) {
+                if tx.send(line).is_err() {
                     break;
                 }
             }

@@ -1,5 +1,4 @@
 use bodyfile::Bodyfile3Line;
-use rand;
 use libmactime2::*;
 use std::borrow::Borrow;
 use std::collections::HashSet;
@@ -18,7 +17,7 @@ fn test_ambiguity1() {
     };
 
     let mut decoder = BodyfileDecoder::with_receiver(rx, options);
-    let mut sorter = BodyfileSorter::new()
+    let mut sorter = BodyfileSorter::default()
         .with_receiver(decoder.get_receiver(), options)
         .with_output(Box::new(EventCatcher::new()));
 

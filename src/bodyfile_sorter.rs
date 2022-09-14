@@ -19,6 +19,7 @@ pub trait Mactime2Writer: Send {
     fn fmt(&self, timestamp: &i64, entry: &ListEntry) -> String;
 }
 
+#[derive(Default)]
 pub struct BodyfileSorter {
     worker: Option<JoinHandle<Result<(),MactimeError>>>,
     receiver: Option<Receiver<Bodyfile3Line>>,
@@ -66,8 +67,8 @@ impl PartialOrd for ListEntry {
 
 impl Ord for ListEntry {
     fn cmp(&self, other: &Self) -> Ordering {
-        match self.line.get_name().cmp(&other.line.get_name()) {
-            Ordering::Equal => self.line.get_inode().cmp(&other.line.get_inode()),
+        match self.line.get_name().cmp(other.line.get_name()) {
+            Ordering::Equal => self.line.get_inode().cmp(other.line.get_inode()),
             other => other
         }
     }
@@ -95,7 +96,7 @@ fn insert_timestamp(
             let mut entries_at_ts = BTreeSet::new();
             let entry = ListEntry {
                 flags: flag,
-                line: line,
+                line,
             };
             entries_at_ts.insert(entry);
             entries.insert(timestamp, entries_at_ts);
@@ -104,7 +105,7 @@ fn insert_timestamp(
         Some(entries_at_ts) => {
             let entry = ListEntry {
                 flags: flag,
-                line: line,
+                line,
             };
             entries_at_ts.insert(entry);
         }
@@ -112,13 +113,6 @@ fn insert_timestamp(
 }
 
 impl BodyfileSorter {
-    pub fn new() -> Self {
-        Self {
-            worker: None,
-            receiver: None,
-            output: None
-        }
-    }
 
     pub fn run(&mut self) {
         let receiver = self.receiver.take().expect("no receiver provided; please call with_receiver()");
@@ -210,7 +204,7 @@ impl BodyfileSorter {
 
         for (ts, entries_at_ts) in entries.iter() {
             for line in entries_at_ts {
-                output.write(&ts, &line);
+                output.write(ts, line);
             }
         }
         Ok(())

@@ -1,4 +1,3 @@
-use rand;
 use libmactime2::*;
 use std::sync::mpsc::{self, Sender, Receiver};
 use std::cell::RefCell;
@@ -15,7 +14,7 @@ fn test_sorted() {
     };
 
     let mut decoder = BodyfileDecoder::with_receiver(rx, options);
-    let mut sorter = BodyfileSorter::new()
+    let mut sorter = BodyfileSorter::default()
         .with_receiver(decoder.get_receiver(), options)
         .with_output(Box::new(EventCatcher::new()));
 
@@ -118,7 +117,7 @@ fn test_sorted() {
     drop(tx);
 
     decoder.join().unwrap();
-    sorter.join().unwrap();
+    let _ = sorter.join().unwrap();
 }
 
 fn random_ts() -> i64 {

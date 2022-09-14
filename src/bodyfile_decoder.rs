@@ -45,7 +45,7 @@ impl Filter<String, Bodyfile3Line> for BodyfileDecoder {
                 Ok(l) => l
             };
 
-            if let Err(_) = tx.send(bf_line) {
+            if tx.send(bf_line).is_err() {
                 break;
             }
         }

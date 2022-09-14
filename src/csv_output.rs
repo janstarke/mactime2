@@ -33,7 +33,6 @@ impl Mactime2Writer for CsvOutput {
 
 #[cfg(test)]
 mod tests {
-    use rand;
     use super::CsvOutput;
     use chrono::DateTime;
     use chrono_tz::TZ_VARIANTS;

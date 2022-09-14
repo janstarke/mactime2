@@ -35,7 +35,7 @@ impl Mactime2Writer for JsonOutput {
             entry.line.get_uid(),
             entry.line.get_gid(),
             entry.line.get_inode(),
-            entry.line.get_name().replace("\\", "\\\\").replace("\"", "\\\"")
+            entry.line.get_name().replace('\\', "\\\\").replace('\"', "\\\"")
         )
     }
 }
