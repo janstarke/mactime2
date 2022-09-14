@@ -81,7 +81,7 @@ mod tests {
 
     #[allow(non_snake_case)]
     #[test]
-    fn test_correct_ts_random_tz() {
+    fn test_correct_ts_random_tz() -> Result<(), String> {
         for _ in 1..100 {
             let tz = random_tz();
             let output = TxtOutput::new(tz, tz);
@@ -97,10 +97,14 @@ mod tests {
             assert!(out_line2.starts_with(' '));
 
             let out_ts = out_line.split(' ').into_iter().next().unwrap();
-            let rfc3339 = DateTime::parse_from_rfc3339(out_ts).expect(out_ts);
+            let rfc3339 = match DateTime::parse_from_rfc3339(out_ts) {
+                Ok(ts) => ts,
+                Err(e) => return Err(format!("error while parsing '{}': {}", out_ts, e))
+            };
             let offset = rfc3339.offset().local_minus_utc() as i64;
             let calculated_ts = rfc3339.timestamp() + offset;
             assert_eq!(unix_ts, calculated_ts, "Timestamp {} converted to '{}' and back to {} (offset was {}s)", unix_ts, out_ts, calculated_ts, offset);
         }
+        Ok(())
     }
 }
