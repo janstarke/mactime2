@@ -12,7 +12,7 @@ const BODYFILE_HELP: &str = "path to bodyfile of '-' for stdin";
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Cli {
-    #[clap(default_value="-", help=BODYFILE_HELP, display_order(100))]
+    #[clap(short('b'), default_value="-", help=BODYFILE_HELP, display_order(100))]
     pub(crate) bodyfile: String,
 
     /// output format, if not specified, default value is 'txt'
