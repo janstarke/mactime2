@@ -1,6 +1,6 @@
 [package]
 name = "mactime2"
-version = "2.0.0"
+version = "3.0.0"
 edition = "2018"
 authors = ["Jan Starke <Jan.Starke@t-systems.com>"]
 description = "Replacement for `mactime`"
@@ -19,11 +19,12 @@ path = "src/main.rs"
 [features]
 default = ["gzip"]
 gzip = ["flate2"]
+elastic = ["elastic4forensics"]
 
 [dependencies]
 bodyfile=">=0.1.4"
-clap = "3.2"
-clap-verbosity-flag = "1.0.0"
+clap = "4"
+clap-verbosity-flag = "2.0.0"
 anyhow = "1.0"
 simplelog = "0.12"
 log = "0.4"
@@ -34,6 +35,7 @@ flate2 = {version="1", optional=true}
 encoding_rs_io = "0.1"
 encoding_rs = "0.8"
 thiserror = "1"
+elastic4forensics = {version="0", optional=true, path="../elastic4forensics"}
 
 [dev-dependencies]
 more-asserts = "0.3"
