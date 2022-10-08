@@ -16,7 +16,7 @@ struct Cli {
     pub(crate) bodyfile: String,
 
     /// output format, if not specified, default value is 'txt'
-    #[clap(short('F'), long("format"), arg_enum, display_order(600))]
+    #[clap(short('F'), long("format"), value_enum, display_order(600))]
     pub(crate) output_format: Option<OutputFormat>,
 
     /// output as CSV instead of TXT. This is a conveniance option, which is identical to `--format=csv`
@@ -40,6 +40,26 @@ struct Cli {
     /// strict mode: do not only warn, but abort if an error occurs
     #[clap(long("strict"), display_order(500))]
     pub(crate) strict_mode: bool,
+
+    /// server name or IP address of elasticsearch server
+    #[clap(short('H'), long("host"), display_order=600, default_value="localhost")]
+    #[cfg(feature="elastic")]
+    pub(crate) host: String,
+
+    /// API port number of elasticsearch server
+    #[clap(short('P'), long("port"), display_order=610, default_value_t=9200)]
+    #[cfg(feature="elastic")]
+    pub(crate) port: u16,
+
+    /// username for elasticsearch server
+    #[clap(short('U'), long("username"), display_order=620, default_value=Some("elastic"))]
+    #[cfg(feature="elastic")]
+    pub(crate) username: String,
+
+    /// password for authenticating at elasticsearch
+    #[clap(short('W'), long("password"), display_order=620)]
+    #[cfg(feature="elastic")]
+    pub(crate) password: Option<String>,
 
     #[clap(flatten)]
     pub(crate) verbose: clap_verbosity_flag::Verbosity,

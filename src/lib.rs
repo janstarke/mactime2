@@ -1,3 +1,5 @@
+use std::f64::consts::E;
+
 use anyhow::Result;
 use chrono::offset::TimeZone;
 use chrono::{LocalResult, NaiveDateTime};
@@ -13,19 +15,24 @@ pub mod filter;
 pub use bodyfile_decoder::*;
 pub use bodyfile_reader::*;
 pub use bodyfile_sorter::*;
-use clap::clap_derive::ArgEnum;
+use clap::clap_derive::ValueEnum;
 pub use filter::*;
 use csv_output::*;
 use json_output::JsonOutput;
 use txt_output::*;
 pub mod error;
 pub use error::*;
+mod elastic_output;
+use elastic_output::*;
 
-#[derive(ArgEnum, Clone)]
+#[derive(ValueEnum, Clone)]
 pub enum OutputFormat {
     CSV,
     TXT,
     JSON,
+
+    #[cfg(feature="elastic")]
+    ELASTIC
 }
 
 pub struct Mactime2Application {
@@ -74,7 +81,10 @@ impl Mactime2Application {
         sorter = sorter.with_output(match self.format {
             OutputFormat::CSV => Box::new(CsvOutput::new(self.src_zone, self.dst_zone)),
             OutputFormat::TXT => Box::new(TxtOutput::new(self.src_zone, self.dst_zone)),
-            OutputFormat::JSON => Box::new(JsonOutput::new(self.src_zone, self.dst_zone))
+            OutputFormat::JSON => Box::new(JsonOutput::new(self.src_zone, self.dst_zone)),
+
+            #[cfg(feature="elastic")]
+            OutputFormat::ELASTIC => Box::new(ElasticOutput::new()),
         });
         sorter.run();
 
