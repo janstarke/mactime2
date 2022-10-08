@@ -26,6 +26,14 @@ mod elastic_output;
 use elastic_output::*;
 
 #[derive(ValueEnum, Clone)]
+pub enum InputFormat {
+    BODYFILE,
+
+    #[cfg(feature="elastic")]
+    JSON
+}
+
+#[derive(ValueEnum, Clone)]
 pub enum OutputFormat {
     CSV,
     TXT,
@@ -41,6 +49,28 @@ pub struct Mactime2Application {
     src_zone: Tz,
     dst_zone: Tz,
     strict_mode: bool,
+
+
+    #[cfg(feature="elastic")]
+    host: String,
+
+    #[cfg(feature="elastic")]
+    port: u16,
+
+    #[cfg(feature="elastic")]
+    username: String,
+
+    #[cfg(feature="elastic")]
+    password: String,
+
+    #[cfg(feature="elastic")]
+    index_name: String,
+
+    #[cfg(feature="elastic")]
+    expect_existing: bool,
+
+    #[cfg(feature="elastic")]
+    omit_certificate_validation: bool
 }
 
 impl Mactime2Application {
@@ -69,6 +99,49 @@ impl Mactime2Application {
         self
     }
 
+    #[cfg(feature="elastic")]
+    pub fn with_host(mut self, host: String) -> Self {
+        self.host = host;
+        self
+    }
+
+    #[cfg(feature="elastic")]
+    pub fn with_port(mut self, port: u16) -> Self {
+        self.port = port;
+        self
+    }
+
+    #[cfg(feature="elastic")]
+    pub fn with_username(mut self, username: String) -> Self {
+        self.username = username;
+        self
+    }
+
+    #[cfg(feature="elastic")]
+    pub fn with_password(mut self, password: String) -> Self {
+        self.password = password;
+        self
+    }
+
+    #[cfg(feature="elastic")]
+    pub fn with_index_name(mut self, index_name: String) -> Self {
+        self.index_name = index_name;
+        self
+    }
+
+    #[cfg(feature="elastic")]
+    pub fn with_expect_existing(mut self, expect_existing: bool) -> Self {
+        self.expect_existing = expect_existing;
+        self
+    }
+
+    #[cfg(feature="elastic")]
+    pub fn with_omit_certificate_validation(mut self, omit_certificate_validation: bool) -> Self {
+        self.omit_certificate_validation = omit_certificate_validation;
+        self
+    }
+
+
     pub fn run(&self) -> Result<()> {
         let options = RunOptions {
             strict_mode: self.strict_mode,
@@ -84,7 +157,15 @@ impl Mactime2Application {
             OutputFormat::JSON => Box::new(JsonOutput::new(self.src_zone, self.dst_zone)),
 
             #[cfg(feature="elastic")]
-            OutputFormat::ELASTIC => Box::new(ElasticOutput::new()),
+            OutputFormat::ELASTIC => Box::new(ElasticOutput::new(
+                self.host.clone(),
+                self.port,
+                self.username.clone(),
+                self.password.clone(),
+                self.index_name.clone(),
+                self.expect_existing,
+                self.omit_certificate_validation
+            )),
         });
         sorter.run();
 
@@ -120,6 +201,27 @@ impl Default for Mactime2Application {
             src_zone: Tz::UTC,
             dst_zone: Tz::UTC,
             strict_mode: false,
+
+            #[cfg(feature="elastic")]
+            host: "localhost".to_string(),
+
+            #[cfg(feature="elastic")]
+            port: 9200,
+            
+            #[cfg(feature="elastic")]
+            username: "elastic".to_string(),
+            
+            #[cfg(feature="elastic")]
+            password: "elastic".to_string(),
+            
+            #[cfg(feature="elastic")]
+            index_name: "elastic".to_string(),
+            
+            #[cfg(feature="elastic")]
+            expect_existing: false,
+            
+            #[cfg(feature="elastic")]
+            omit_certificate_validation: false,
         }
     }
 }

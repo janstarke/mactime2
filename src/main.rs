@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::Parser;
 use simplelog::{TermLogger, Config, TerminalMode, ColorChoice};
-use libmactime2::{Mactime2Application, OutputFormat};
+use libmactime2::{Mactime2Application, OutputFormat, InputFormat};
 use chrono_tz::TZ_VARIANTS;
 
 #[cfg(feature = "gzip")]
@@ -14,6 +14,11 @@ const BODYFILE_HELP: &str = "path to bodyfile of '-' for stdin";
 struct Cli {
     #[clap(short('b'), default_value="-", help=BODYFILE_HELP, display_order(100))]
     pub(crate) bodyfile: String,
+
+    /// input format
+    #[clap(short('I'), long("input-format"), value_enum, display_order(550), default_value_t=InputFormat::BODYFILE)]
+    #[cfg(feature="elastic")]
+    pub(crate) input_format: InputFormat,
 
     /// output format, if not specified, default value is 'txt'
     #[clap(short('F'), long("format"), value_enum, display_order(600))]
@@ -51,6 +56,11 @@ struct Cli {
     #[cfg(feature="elastic")]
     pub(crate) port: u16,
 
+    /// name of the elasticsearch index
+    #[clap(long("index"), display_order=615)]
+    #[cfg(feature="elastic")]
+    pub(crate) index_name: Option<String>,
+
     /// username for elasticsearch server
     #[clap(short('U'), long("username"), display_order=620, default_value=Some("elastic"))]
     #[cfg(feature="elastic")]
@@ -60,6 +70,19 @@ struct Cli {
     #[clap(short('W'), long("password"), display_order=620)]
     #[cfg(feature="elastic")]
     pub(crate) password: Option<String>,
+
+    /// If this flag is set, a new index is created if it does not exist already, and new values
+    /// will be inserted into the index, no matter what. If the flag is not set, mactime2 will
+    /// check if the index exists and will abort if there is already such an index. Otherwise, the index
+    /// will be newly created.
+    #[clap(short('X'), long("expect-existing"), display_order=630, default_value_t=false)]
+    #[cfg(feature="elastic")]
+    pub(crate) expect_existing: bool,
+
+    /// omit certificate validation
+    #[clap(long("insecure"), display_order=640, default_value_t=false)]
+    #[cfg(feature="elastic")]
+    pub(crate) omit_certificate_validation: bool,
 
     #[clap(flatten)]
     pub(crate) verbose: clap_verbosity_flag::Verbosity,
