@@ -20,18 +20,16 @@ cargo install mactime2
 # Usage
 
 ```
-mactime2 2.0.0
+mactime2 2.0.1
 Jan Starke <Jan.Starke@t-systems.com>
 Replacement for `mactime`
 
 USAGE:
-    mactime2 [OPTIONS] [BODYFILE]
-
-ARGS:
-    <BODYFILE>    path to bodyfile of '-' for stdin (files ending with .gz will be treated as
-                  being gzipped) [default: -]
+    mactime2 [OPTIONS]
 
 OPTIONS:
+    -b <BODYFILE>                     path to bodyfile of '-' for stdin (files ending with .gz will
+                                      be treated as being gzipped) [default: -]
     -f, --from-timezone <SRC_ZONE>    name of offset of source timezone (or 'list' to display all
                                       possible values
     -t, --to-timezone <DST_ZONE>      name of offset of destination timezone (or 'list' to display
@@ -51,7 +49,6 @@ OPTIONS:
     -q, --quiet                       Less output per occurrence
     -v, --verbose                     More output per occurrence
     -V, --version                     Print version information
-
 ```
 
 # Examples
