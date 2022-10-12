@@ -1,5 +1,3 @@
-use std::f64::consts::E;
-
 use anyhow::Result;
 use chrono::offset::TimeZone;
 use chrono::{LocalResult, NaiveDateTime};
@@ -12,18 +10,22 @@ mod csv_output;
 mod txt_output;
 mod json_output;
 pub mod filter;
+pub mod error;
+pub use error::*;
+mod elastic_output;
+mod stream;
+
 pub use bodyfile_decoder::*;
 pub use bodyfile_reader::*;
 pub use bodyfile_sorter::*;
 use clap::clap_derive::ValueEnum;
-pub use filter::*;
 use csv_output::*;
 use json_output::JsonOutput;
 use txt_output::*;
-pub mod error;
-pub use error::*;
-mod elastic_output;
 use elastic_output::*;
+use crate::stream::*;
+pub use filter::*;
+
 
 #[derive(ValueEnum, Clone)]
 pub enum InputFormat {
@@ -147,7 +149,7 @@ impl Mactime2Application {
             strict_mode: self.strict_mode,
         };
 
-        let mut reader = BodyfileReader::from(&self.bodyfile)?;
+        let mut reader = <BodyfileReader as StreamReader<String>>::from(&self.bodyfile)?;
         let mut decoder = BodyfileDecoder::with_receiver(reader.get_receiver(), options);
         let mut sorter = BodyfileSorter::default().with_receiver(decoder.get_receiver(), options);
 
