@@ -1,6 +1,6 @@
 use chrono_tz::Tz;
 use crate::{Mactime2Application, Mactime2Writer};
-use crate::bodyfile_sorter::*;
+use crate::bodyfile::*;
 
 pub struct JsonOutput {
     src_zone: Tz, dst_zone: Tz

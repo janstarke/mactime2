@@ -1,4 +1,4 @@
-use std::{io::Read, fs::File};
+use std::{io::{Read, BufReader}, fs::File};
 use anyhow::Result;
 
 #[cfg(feature = "gzip")]
@@ -16,7 +16,7 @@ impl StreamSource {
             Some(filename) =>  {
                 if filename == "-" { Ok(StreamSource::Stdin) }
                 else {
-                    let file = File::open(filename)?;
+                    let file = BufReader::new(File::open(filename)?);
 
                     #[cfg(not(feature = "gzip"))]
                     let reader: Box<dyn BufRead> = Box::new(file);
@@ -31,7 +31,7 @@ impl StreamSource {
     }
 
     #[cfg(feature = "gzip")]
-    fn open_gzip(filename: &str, file: File) -> Box<dyn Read + Send> {
+    fn open_gzip<R: Read + Send + 'static>(filename: &str, file: R) -> Box<dyn Read + Send> {
         if filename.ends_with(".gz") {
             Box::new(GzDecoder::new(file))
         } else {

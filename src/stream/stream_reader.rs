@@ -1,10 +1,17 @@
-use std::{sync::mpsc::{Receiver, Sender, self}, thread::{JoinHandle, self}, io::stdin};
+use std::{
+    io::stdin,
+    sync::mpsc::{self, Receiver, Sender},
+    thread::{self, JoinHandle},
+};
 
 use anyhow::Result;
 
-use crate::stream::*;
+use crate::{stream::*, Joinable};
 
-pub(crate) trait StreamReader<T>: Sized + StreamWorker<T> where T: Send + 'static {
+pub(crate) trait StreamReader<T>: Sized + StreamWorker<T> + Joinable<()>
+where
+    T: Send + 'static,
+{
     fn from(filename: &Option<String>) -> Result<Self> {
         let (tx, rx): (Sender<T>, Receiver<T>) = mpsc::channel();
 

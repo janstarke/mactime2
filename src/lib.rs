@@ -3,26 +3,17 @@ use chrono::offset::TimeZone;
 use chrono::{LocalResult, NaiveDateTime};
 use chrono_tz::Tz;
 
-pub mod bodyfile_decoder;
-pub mod bodyfile_reader;
-pub mod bodyfile_sorter;
-mod csv_output;
-mod txt_output;
-mod json_output;
+pub mod bodyfile;
+mod output;
 pub mod filter;
 pub mod error;
 pub use error::*;
-mod elastic_output;
 mod stream;
+mod elastic;
 
-pub use bodyfile_decoder::*;
-pub use bodyfile_reader::*;
-pub use bodyfile_sorter::*;
+pub use crate::bodyfile::*;
 use clap::clap_derive::ValueEnum;
-use csv_output::*;
-use json_output::JsonOutput;
-use txt_output::*;
-use elastic_output::*;
+use output::*;
 use crate::stream::*;
 pub use filter::*;
 

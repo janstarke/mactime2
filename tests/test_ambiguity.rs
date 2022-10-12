@@ -1,4 +1,4 @@
-use bodyfile::Bodyfile3Line;
+use ::bodyfile::Bodyfile3Line;
 use libmactime2::*;
 use std::borrow::Borrow;
 use std::collections::HashSet;
@@ -25,7 +25,7 @@ fn test_ambiguity1() {
 
     let ts1 = random_ts();
     let ts2 = ts1 + 1;
-    let bf = bodyfile::Bodyfile3Line::new()
+    let bf = ::bodyfile::Bodyfile3Line::new()
         .with_name("sample1.txt")
         .with_atime(ts1)
         .with_mtime(ts1)
@@ -33,7 +33,7 @@ fn test_ambiguity1() {
         .with_crtime(ts1);
     tx.send(bf.to_string()).unwrap();
 
-    let bf = bodyfile::Bodyfile3Line::new()
+    let bf = ::bodyfile::Bodyfile3Line::new()
         .with_name("sample1.txt")
         .with_atime(ts2)
         .with_mtime(ts2)

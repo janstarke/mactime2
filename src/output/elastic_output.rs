@@ -1,6 +1,6 @@
 use crate::Mactime2Writer;
 
-pub(crate) struct ElasticOutput {
+pub struct ElasticOutput {
     host: String,
     port: u16,
     username: String,
