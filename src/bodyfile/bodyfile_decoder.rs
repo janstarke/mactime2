@@ -1,4 +1,4 @@
-use crate::{Filter, Joinable, RunOptions};
+use crate::{Filter, Joinable, RunOptions, Provider, Consumer};
 use std::sync::mpsc::{self, Sender, Receiver};
 use std::thread::{JoinHandle};
 use bodyfile::Bodyfile3Line;
@@ -9,17 +9,7 @@ pub struct BodyfileDecoder {
     rx: Option<Receiver<Bodyfile3Line>>,
 }
 
-impl Filter<String, Bodyfile3Line> for BodyfileDecoder {
-    fn with_receiver(reader: Receiver<String>, options: RunOptions) -> Self {
-        let (tx, rx): (Sender<Bodyfile3Line>, Receiver<Bodyfile3Line>) = mpsc::channel();
-        Self {
-            worker: Some(std::thread::spawn(move || {
-                Self::worker(reader, tx, options)
-            })),
-            rx: Some(rx),
-        }
-    }
-
+impl Filter<String, Bodyfile3Line, ()> for BodyfileDecoder {
     fn worker(reader: Receiver<String>, tx: Sender<Bodyfile3Line>, options: RunOptions) {
         loop {
             let mut line = match reader.recv() {
@@ -50,9 +40,24 @@ impl Filter<String, Bodyfile3Line> for BodyfileDecoder {
             }
         }
     }
+}
 
+impl Provider<Bodyfile3Line, ()> for BodyfileDecoder {
     fn get_receiver(&mut self) -> Receiver<Bodyfile3Line> {
         self.rx.take().unwrap()
+    }
+
+}
+
+impl Consumer<String> for BodyfileDecoder {
+    fn with_receiver(reader: Receiver<String>, options: RunOptions) -> Self {
+        let (tx, rx): (Sender<Bodyfile3Line>, Receiver<Bodyfile3Line>) = mpsc::channel();
+        Self {
+            worker: Some(std::thread::spawn(move || {
+                Self::worker(reader, tx, options)
+            })),
+            rx: Some(rx),
+        }
     }
 }
 

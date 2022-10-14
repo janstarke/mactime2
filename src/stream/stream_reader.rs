@@ -6,9 +6,9 @@ use std::{
 
 use anyhow::Result;
 
-use crate::{stream::*, Joinable};
+use crate::{stream::*, Joinable, Provider};
 
-pub(crate) trait StreamReader<T>: Sized + StreamWorker<T> + Joinable<()>
+pub(crate) trait StreamReader<T, R>: Sized + StreamWorker<T> + Joinable<R> + Provider<T, R>
 where
     T: Send + 'static,
 {
@@ -24,9 +24,8 @@ where
             }),
         };
 
-        Ok(<Self as StreamReader<T>>::new(worker, rx))
+        Ok(<Self as StreamReader<T, R>>::new(worker, rx))
     }
 
     fn new(worker: JoinHandle<()>, rx: Receiver<T>) -> Self;
-    fn get_receiver(&mut self) -> Receiver<T>;
 }

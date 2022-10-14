@@ -19,7 +19,7 @@ path = "src/main.rs"
 [features]
 default = ["gzip", "elastic"]
 gzip = ["flate2"]
-elastic = ["elastic4forensics", "serde_json"]
+elastic = ["elastic4forensics", "elasticsearch", "serde_json"]
 
 [dependencies]
 bodyfile=">=0.1.4"
@@ -37,6 +37,7 @@ encoding_rs = "0.8"
 thiserror = "1"
 
 elastic4forensics = {version="0", optional=true, path="../elastic4forensics"}
+elasticsearch = {version="8.4.0-alpha.1", optional=true}
 serde_json = {version = "1", optional=true}
 
 [dev-dependencies]

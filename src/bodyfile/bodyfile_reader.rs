@@ -1,3 +1,4 @@
+use crate::Provider;
 use crate::stream::*;
 use crate::Joinable;
 use encoding_rs_io::DecodeReaderBytesBuilder;
@@ -8,6 +9,12 @@ use std::thread::{JoinHandle};
 pub struct BodyfileReader {
     worker: Option<JoinHandle<()>>,
     rx: Option<Receiver<String>>,
+}
+
+impl Provider<String, ()> for BodyfileReader {
+    fn get_receiver(&mut self) -> Receiver<String> {
+        self.rx.take().unwrap()
+    }
 }
 
 impl StreamWorker<String> for BodyfileReader {
@@ -44,16 +51,12 @@ impl StreamWorker<String> for BodyfileReader {
     }
 }
 
-impl StreamReader<String> for BodyfileReader {
+impl StreamReader<String, ()> for BodyfileReader {
     fn new (worker: JoinHandle<()>, rx: Receiver<String>) -> Self {
         Self {
             worker: Some(worker),
             rx: Some(rx)
         }
-    }
-
-    fn get_receiver(&mut self) -> Receiver<String> {
-        self.rx.take().unwrap()
     }
 }
 

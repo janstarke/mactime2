@@ -4,9 +4,16 @@ use std::sync::mpsc::{Sender, Receiver};
 pub struct RunOptions {
     pub strict_mode: bool
 }
-pub trait Filter<From, To> {
-    fn with_receiver(previous: Receiver<From>, options: RunOptions) -> Self;
+
+pub trait Provider<To, R>: Joinable<R> {
     fn get_receiver(&mut self) -> Receiver<To>;
+}
+
+pub trait Consumer<From> {
+    fn with_receiver(previous: Receiver<From>, options: RunOptions) -> Self;
+}
+
+pub trait Filter<From, To, R> : Consumer<From> + Provider<To, R> {
     fn worker(reader: Receiver<From>, tx: Sender<To>, options: RunOptions);
 }
 

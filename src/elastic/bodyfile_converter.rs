@@ -4,15 +4,20 @@ use bodyfile::Bodyfile3Line;
 use elastic4forensics::objects::PosixFile;
 use serde_json::Value;
 
-use crate::{Filter, RunOptions};
+use crate::{Filter, RunOptions, Provider, Consumer, Joinable};
 
 pub struct BodyfileConverter {
     worker: Option<JoinHandle<()>>,
     rx: Option<Receiver<Value>>,
 }
 
+impl Provider<Value, ()> for BodyfileConverter {
+    fn get_receiver(&mut self) -> Receiver<Value> {
+        self.rx.take().unwrap()
+    }
+}
 
-impl Filter<Bodyfile3Line, Value> for BodyfileConverter {
+impl Consumer<Bodyfile3Line> for BodyfileConverter {
     fn with_receiver(reader: Receiver<Bodyfile3Line>, options: RunOptions) -> Self {
         let (tx, rx): (Sender<Value>, Receiver<Value>) = mpsc::channel();
         Self {
@@ -22,11 +27,9 @@ impl Filter<Bodyfile3Line, Value> for BodyfileConverter {
             rx: Some(rx),
         }
     }
+}
 
-    fn get_receiver(&mut self) -> Receiver<Value> {
-        self.rx.take().unwrap()
-    }
-
+impl Filter<Bodyfile3Line, Value, ()> for BodyfileConverter {
     fn worker(reader: Receiver<Bodyfile3Line>, tx: std::sync::mpsc::Sender<Value>, _options: crate::RunOptions) {
         loop {
             let bf_line = match reader.recv() {
@@ -40,6 +43,15 @@ impl Filter<Bodyfile3Line, Value> for BodyfileConverter {
                     return;
                 }
             }
+        }
+    }
+}
+
+impl Joinable<()> for BodyfileConverter {
+    fn join(&mut self) -> std::thread::Result<()> {
+        match self.worker.take() {
+            Some(w) => w.join(),
+            None => Ok(()),
         }
     }
 }

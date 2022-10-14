@@ -1,29 +1,32 @@
+use std::io::Read;
+
 use anyhow::Result;
 use chrono::offset::TimeZone;
 use chrono::{LocalResult, NaiveDateTime};
 use chrono_tz::Tz;
 
 pub mod bodyfile;
-mod output;
-pub mod filter;
 pub mod error;
+pub mod filter;
+mod output;
+use elastic::{BodyfileConverter, ElasticReader};
 pub use error::*;
-mod stream;
+use serde_json::Value;
 mod elastic;
+mod stream;
 
 pub use crate::bodyfile::*;
-use clap::clap_derive::ValueEnum;
-use output::*;
 use crate::stream::*;
+use clap::clap_derive::ValueEnum;
 pub use filter::*;
-
+use output::*;
 
 #[derive(ValueEnum, Clone)]
 pub enum InputFormat {
     BODYFILE,
 
-    #[cfg(feature="elastic")]
-    JSON
+    #[cfg(feature = "elastic")]
+    JSON,
 }
 
 #[derive(ValueEnum, Clone)]
@@ -32,8 +35,8 @@ pub enum OutputFormat {
     TXT,
     JSON,
 
-    #[cfg(feature="elastic")]
-    ELASTIC
+    #[cfg(feature = "elastic")]
+    ELASTIC,
 }
 
 pub struct Mactime2Application {
@@ -43,27 +46,29 @@ pub struct Mactime2Application {
     dst_zone: Tz,
     strict_mode: bool,
 
+    #[cfg(feature = "elastic")]
+    input_format: InputFormat,
 
-    #[cfg(feature="elastic")]
+    #[cfg(feature = "elastic")]
     host: String,
 
-    #[cfg(feature="elastic")]
+    #[cfg(feature = "elastic")]
     port: u16,
 
-    #[cfg(feature="elastic")]
+    #[cfg(feature = "elastic")]
     username: String,
 
-    #[cfg(feature="elastic")]
+    #[cfg(feature = "elastic")]
     password: String,
 
-    #[cfg(feature="elastic")]
+    #[cfg(feature = "elastic")]
     index_name: String,
 
-    #[cfg(feature="elastic")]
+    #[cfg(feature = "elastic")]
     expect_existing: bool,
 
-    #[cfg(feature="elastic")]
-    omit_certificate_validation: bool
+    #[cfg(feature = "elastic")]
+    omit_certificate_validation: bool,
 }
 
 impl Mactime2Application {
@@ -92,55 +97,100 @@ impl Mactime2Application {
         self
     }
 
-    #[cfg(feature="elastic")]
+    #[cfg(feature = "elastic")]
     pub fn with_host(mut self, host: String) -> Self {
         self.host = host;
         self
     }
 
-    #[cfg(feature="elastic")]
+    #[cfg(feature = "elastic")]
+    pub fn with_input_format(mut self, input_format: InputFormat) -> Self {
+        self.input_format = input_format;
+        self
+    }
+
+    #[cfg(feature = "elastic")]
     pub fn with_port(mut self, port: u16) -> Self {
         self.port = port;
         self
     }
 
-    #[cfg(feature="elastic")]
+    #[cfg(feature = "elastic")]
     pub fn with_username(mut self, username: String) -> Self {
         self.username = username;
         self
     }
 
-    #[cfg(feature="elastic")]
+    #[cfg(feature = "elastic")]
     pub fn with_password(mut self, password: String) -> Self {
         self.password = password;
         self
     }
 
-    #[cfg(feature="elastic")]
+    #[cfg(feature = "elastic")]
     pub fn with_index_name(mut self, index_name: String) -> Self {
         self.index_name = index_name;
         self
     }
 
-    #[cfg(feature="elastic")]
+    #[cfg(feature = "elastic")]
     pub fn with_expect_existing(mut self, expect_existing: bool) -> Self {
         self.expect_existing = expect_existing;
         self
     }
 
-    #[cfg(feature="elastic")]
+    #[cfg(feature = "elastic")]
     pub fn with_omit_certificate_validation(mut self, omit_certificate_validation: bool) -> Self {
         self.omit_certificate_validation = omit_certificate_validation;
         self
     }
 
+    #[cfg(feature = "elastic")]
+    fn create_value_provider(&self) -> Result<Box<dyn Provider<Value, ()>>> {
+        let options = RunOptions {
+            strict_mode: self.strict_mode,
+        };
+
+        match self.input_format {
+            InputFormat::BODYFILE => {
+                let mut reader = <BodyfileReader as StreamReader<String, ()>>::from(&self.bodyfile)?;
+                let mut decoder = BodyfileDecoder::with_receiver(reader.get_receiver(), options);
+                let mut filter = BodyfileConverter::with_receiver(decoder.get_receiver(), options);
+                Ok(Box::new(filter))
+            }
+            InputFormat::JSON => {
+                let mut reader = <ElasticReader as StreamReader<Value, ()>>::from(&self.bodyfile)?;
+                Ok(Box::new(reader))
+            }
+        }
+    }
 
     pub fn run(&self) -> Result<()> {
         let options = RunOptions {
             strict_mode: self.strict_mode,
         };
 
-        let mut reader = <BodyfileReader as StreamReader<String>>::from(&self.bodyfile)?;
+        #[cfg(feature = "elastic")]
+        if matches!(self.format, OutputFormat::ELASTIC) {
+            let mut reader = self.create_value_provider()?;
+            let mut writer = ElasticOutput::new(
+                self.host.clone(),
+                self.port,
+                self.username.clone(),
+                self.password.clone(),
+                self.index_name.clone(),
+                self.expect_existing,
+                self.omit_certificate_validation,
+                reader.get_receiver(),
+                options,
+            );
+            writer.run()?;
+            let _ = reader.join();
+            let _ = writer.join();
+            return Ok(())
+        }
+
+        let mut reader = <BodyfileReader as StreamReader<String, ()>>::from(&self.bodyfile)?;
         let mut decoder = BodyfileDecoder::with_receiver(reader.get_receiver(), options);
         let mut sorter = BodyfileSorter::default().with_receiver(decoder.get_receiver(), options);
 
@@ -148,17 +198,7 @@ impl Mactime2Application {
             OutputFormat::CSV => Box::new(CsvOutput::new(self.src_zone, self.dst_zone)),
             OutputFormat::TXT => Box::new(TxtOutput::new(self.src_zone, self.dst_zone)),
             OutputFormat::JSON => Box::new(JsonOutput::new(self.src_zone, self.dst_zone)),
-
-            #[cfg(feature="elastic")]
-            OutputFormat::ELASTIC => Box::new(ElasticOutput::new(
-                self.host.clone(),
-                self.port,
-                self.username.clone(),
-                self.password.clone(),
-                self.index_name.clone(),
-                self.expect_existing,
-                self.omit_certificate_validation
-            )),
+            _ => panic!("invalid execution path"),
         });
         sorter.run();
 
@@ -195,25 +235,28 @@ impl Default for Mactime2Application {
             dst_zone: Tz::UTC,
             strict_mode: false,
 
-            #[cfg(feature="elastic")]
+            #[cfg(feature = "elastic")]
+            input_format: InputFormat::BODYFILE,
+
+            #[cfg(feature = "elastic")]
             host: "localhost".to_string(),
 
-            #[cfg(feature="elastic")]
+            #[cfg(feature = "elastic")]
             port: 9200,
-            
-            #[cfg(feature="elastic")]
+
+            #[cfg(feature = "elastic")]
             username: "elastic".to_string(),
-            
-            #[cfg(feature="elastic")]
+
+            #[cfg(feature = "elastic")]
             password: "elastic".to_string(),
-            
-            #[cfg(feature="elastic")]
+
+            #[cfg(feature = "elastic")]
             index_name: "elastic".to_string(),
-            
-            #[cfg(feature="elastic")]
+
+            #[cfg(feature = "elastic")]
             expect_existing: false,
-            
-            #[cfg(feature="elastic")]
+
+            #[cfg(feature = "elastic")]
             omit_certificate_validation: false,
         }
     }

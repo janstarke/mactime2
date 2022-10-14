@@ -2,12 +2,18 @@ use std::{thread::JoinHandle, sync::mpsc::Receiver};
 
 use serde_json::Value;
 
-use crate::{stream::{StreamWorker, StreamReader}, Joinable};
+use crate::{stream::{StreamWorker, StreamReader}, Joinable, Provider};
 
 
 pub struct ElasticReader {
     worker: Option<JoinHandle<()>>,
     rx: Option<Receiver<Value>>,
+}
+
+impl Provider<Value, ()> for ElasticReader {
+    fn get_receiver(&mut self) -> Receiver<Value> {
+        self.rx.take().unwrap()
+    }
 }
 
 impl StreamWorker<Value> for ElasticReader {
@@ -36,16 +42,12 @@ impl StreamWorker<Value> for ElasticReader {
     }
 }
 
-impl StreamReader<Value> for ElasticReader {
+impl StreamReader<Value, ()> for ElasticReader {
     fn new(worker: JoinHandle<()>, rx: Receiver<Value>) -> Self {
         Self {
             worker: Some(worker),
             rx: Some(rx)
         }
-    }
-
-    fn get_receiver(&mut self) -> Receiver<Value> {
-        self.rx.take().unwrap()
     }
 }
 
