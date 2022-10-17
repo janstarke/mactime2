@@ -1,5 +1,3 @@
-use std::io::Read;
-
 use anyhow::Result;
 use chrono::offset::TimeZone;
 use chrono::{LocalResult, NaiveDateTime};
@@ -20,6 +18,8 @@ use crate::stream::*;
 use clap::clap_derive::ValueEnum;
 pub use filter::*;
 use output::*;
+mod cli;
+pub use cli::Cli;
 
 #[derive(ValueEnum, Clone)]
 pub enum InputFormat {
@@ -155,11 +155,11 @@ impl Mactime2Application {
             InputFormat::BODYFILE => {
                 let mut reader = <BodyfileReader as StreamReader<String, ()>>::from(&self.bodyfile)?;
                 let mut decoder = BodyfileDecoder::with_receiver(reader.get_receiver(), options);
-                let mut filter = BodyfileConverter::with_receiver(decoder.get_receiver(), options);
+                let filter = BodyfileConverter::with_receiver(decoder.get_receiver(), options);
                 Ok(Box::new(filter))
             }
             InputFormat::JSON => {
-                let mut reader = <ElasticReader as StreamReader<Value, ()>>::from(&self.bodyfile)?;
+                let reader = <ElasticReader as StreamReader<Value, ()>>::from(&self.bodyfile)?;
                 Ok(Box::new(reader))
             }
         }
@@ -222,6 +222,52 @@ impl Mactime2Application {
             dst_timestamp.to_rfc3339()
         } else {
             "0000-00-00T00:00:00+00:00".to_owned()
+        }
+    }
+}
+
+impl From<Cli> for Mactime2Application {
+    fn from(cli: Cli) -> Self {
+
+        let format = match cli.output_format {
+            Some(f) => f,
+            None => {
+                if cli.csv_format { OutputFormat::CSV }
+                else if cli.json_format { OutputFormat::JSON }
+                else { OutputFormat::TXT }
+            }
+        };
+
+        Self {
+            format,
+            bodyfile: Some(cli.bodyfile),
+            src_zone: cli.src_zone.map(|tz| tz.parse().unwrap()).unwrap_or(Tz::UTC),
+            dst_zone: cli.dst_zone.map(|tz| tz.parse().unwrap()).unwrap_or(Tz::UTC),
+            strict_mode: cli.strict_mode,
+
+            #[cfg(feature = "elastic")]
+            input_format: cli.input_format,
+
+            #[cfg(feature = "elastic")]
+            host: cli.host,
+
+            #[cfg(feature = "elastic")]
+            port: cli.port,
+
+            #[cfg(feature = "elastic")]
+            username: cli.username,
+
+            #[cfg(feature = "elastic")]
+            password: cli.password.unwrap_or_else(|| "elastic".to_string()),
+
+            #[cfg(feature = "elastic")]
+            index_name: cli.index_name.unwrap_or_else(|| "elastic".to_string()),
+
+            #[cfg(feature = "elastic")]
+            expect_existing: cli.expect_existing,
+
+            #[cfg(feature = "elastic")]
+            omit_certificate_validation: cli.omit_certificate_validation
         }
     }
 }

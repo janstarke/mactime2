@@ -1,11 +1,14 @@
-use std::{sync::mpsc::Receiver, thread::{spawn, JoinHandle}};
 use anyhow::Result;
+use std::{
+    sync::mpsc::Receiver,
+    thread::JoinHandle,
+};
 
 use elastic4forensics::{Index, IndexBuilder, WithHost};
 use elasticsearch::auth::Credentials;
 use serde_json::Value;
 
-use crate::{Mactime2Writer, RunOptions, Joinable};
+use crate::{Joinable, Mactime2Writer, RunOptions};
 
 pub struct ElasticOutput {
     host: String,
@@ -17,11 +20,21 @@ pub struct ElasticOutput {
     omit_certificate_validation: bool,
     receiver: Option<Receiver<Value>>,
     options: RunOptions,
-    worker: Option<JoinHandle<()>>
+    worker: Option<JoinHandle<()>>,
 }
 
 impl ElasticOutput {
-    pub fn new(host: String, port: u16, username: String, password: String, index_name: String, expect_existing: bool, omit_certificate_validation: bool, receiver: Receiver<Value>, options: RunOptions) -> Self {
+    pub fn new(
+        host: String,
+        port: u16,
+        username: String,
+        password: String,
+        index_name: String,
+        expect_existing: bool,
+        omit_certificate_validation: bool,
+        receiver: Receiver<Value>,
+        options: RunOptions,
+    ) -> Self {
         Self {
             host,
             port,
@@ -37,23 +50,49 @@ impl ElasticOutput {
     }
 
     pub fn run(&mut self) -> Result<()> {
-        let receiver = self.receiver.take().expect("no receiver provided; please call with_receiver()");
+        let receiver = self
+            .receiver
+            .take()
+            .expect("no receiver provided; please call with_receiver()");
 
         let index = self.create_client()?;
-        self.worker = Some(
-            std::thread::spawn(move || Self::worker(receiver, index)));
+        self.worker = Some(std::thread::spawn(move || Self::worker(receiver, index)));
         Ok(())
     }
 
     fn create_client(&mut self) -> Result<Index> {
-        IndexBuilder::with_name(self.index_name.clone())
+        let mut builder = IndexBuilder::with_name(self.index_name.clone())
             .with_host(self.host.clone())
             .with_port(self.port)
-            .with_credentials(Credentials::Basic(self.username.take().unwrap(), self.password.take().unwrap()))
-            .build()
+            .with_credentials(Credentials::Basic(
+                self.username.take().unwrap(),
+                self.password.take().unwrap(),
+            ));
+
+        if self.omit_certificate_validation {
+            log::warn!("disabling certificate validation");
+            builder = builder.without_certificate_validation();
+        }
+
+        builder.build()
     }
 
     fn worker(decoder: Receiver<Value>, index: Index) -> () {
+        let mut index = index;
+        loop {
+            let value = match decoder.recv() {
+                Ok(v) => v,
+                Err(why) => {
+                    log::error!("broken thread channel: {}", why);
+                    return;
+                }
+            };
+
+            if let Err(why) = index.add_bulk_document(value) {
+                log::error!("unable to insert document: {}", why);
+                return;
+            }
+        }
     }
 }
 
