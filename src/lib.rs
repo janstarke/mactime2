@@ -7,6 +7,7 @@ pub mod bodyfile;
 pub mod error;
 pub mod filter;
 mod output;
+//use derive_builder::Builder;
 use elastic::{BodyfileConverter, ElasticReader};
 pub use error::*;
 use serde_json::Value;
@@ -39,6 +40,7 @@ pub enum OutputFormat {
     ELASTIC,
 }
 
+//#[derive(Builder)]
 pub struct Mactime2Application {
     format: OutputFormat,
     bodyfile: Option<String>,
@@ -72,78 +74,6 @@ pub struct Mactime2Application {
 }
 
 impl Mactime2Application {
-    pub fn with_format(mut self, format: OutputFormat) -> Self {
-        self.format = format;
-        self
-    }
-
-    pub fn with_bodyfile(mut self, bodyfile: String) -> Self {
-        self.bodyfile = Some(bodyfile);
-        self
-    }
-
-    pub fn with_src_zone(mut self, src_zone: Tz) -> Self {
-        self.src_zone = src_zone;
-        self
-    }
-
-    pub fn with_dst_zone(mut self, dst_zone: Tz) -> Self {
-        self.dst_zone = dst_zone;
-        self
-    }
-
-    pub fn with_strict_mode(mut self) -> Self {
-        self.strict_mode = true;
-        self
-    }
-
-    #[cfg(feature = "elastic")]
-    pub fn with_host(mut self, host: String) -> Self {
-        self.host = host;
-        self
-    }
-
-    #[cfg(feature = "elastic")]
-    pub fn with_input_format(mut self, input_format: InputFormat) -> Self {
-        self.input_format = input_format;
-        self
-    }
-
-    #[cfg(feature = "elastic")]
-    pub fn with_port(mut self, port: u16) -> Self {
-        self.port = port;
-        self
-    }
-
-    #[cfg(feature = "elastic")]
-    pub fn with_username(mut self, username: String) -> Self {
-        self.username = username;
-        self
-    }
-
-    #[cfg(feature = "elastic")]
-    pub fn with_password(mut self, password: String) -> Self {
-        self.password = password;
-        self
-    }
-
-    #[cfg(feature = "elastic")]
-    pub fn with_index_name(mut self, index_name: String) -> Self {
-        self.index_name = index_name;
-        self
-    }
-
-    #[cfg(feature = "elastic")]
-    pub fn with_expect_existing(mut self, expect_existing: bool) -> Self {
-        self.expect_existing = expect_existing;
-        self
-    }
-
-    #[cfg(feature = "elastic")]
-    pub fn with_omit_certificate_validation(mut self, omit_certificate_validation: bool) -> Self {
-        self.omit_certificate_validation = omit_certificate_validation;
-        self
-    }
 
     #[cfg(feature = "elastic")]
     fn create_value_provider(&self) -> Result<Box<dyn Provider<Value, ()>>> {

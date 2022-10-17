@@ -82,8 +82,8 @@ impl ElasticOutput {
         loop {
             let value = match decoder.recv() {
                 Ok(v) => v,
-                Err(why) => {
-                    log::error!("broken thread channel: {}", why);
+                Err(_why) => {
+                    // log::info!("broken thread channel: {}", _why);
                     return;
                 }
             };
