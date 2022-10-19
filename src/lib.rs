@@ -11,6 +11,7 @@ mod output;
 use elastic::{BodyfileConverter, ElasticReader};
 pub use error::*;
 use serde_json::Value;
+use es4forensics::objects::PosixFile;
 mod elastic;
 mod stream;
 
@@ -76,7 +77,8 @@ pub struct Mactime2Application {
 impl Mactime2Application {
 
     #[cfg(feature = "elastic")]
-    fn create_value_provider(&self) -> Result<Box<dyn Provider<Value, ()>>> {
+    fn create_value_provider(&self) -> Result<Box<dyn Provider<PosixFile, ()>>> {
+
         let options = RunOptions {
             strict_mode: self.strict_mode,
         };
@@ -88,10 +90,7 @@ impl Mactime2Application {
                 let filter = BodyfileConverter::with_receiver(decoder.get_receiver(), options);
                 Ok(Box::new(filter))
             }
-            InputFormat::JSON => {
-                let reader = <ElasticReader as StreamReader<Value, ()>>::from(&self.bodyfile)?;
-                Ok(Box::new(reader))
-            }
+            InputFormat::JSON => todo!()
         }
     }
 

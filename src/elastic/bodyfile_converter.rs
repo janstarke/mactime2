@@ -1,25 +1,24 @@
 use std::{thread::JoinHandle, sync::mpsc::{Receiver, Sender, self}};
 
 use bodyfile::Bodyfile3Line;
-use elastic4forensics::objects::PosixFile;
-use serde_json::Value;
+use es4forensics::objects::PosixFile;
 
 use crate::{Filter, RunOptions, Provider, Consumer, Joinable};
 
 pub struct BodyfileConverter {
     worker: Option<JoinHandle<()>>,
-    rx: Option<Receiver<Value>>,
+    rx: Option<Receiver<PosixFile>>,
 }
 
-impl Provider<Value, ()> for BodyfileConverter {
-    fn get_receiver(&mut self) -> Receiver<Value> {
+impl Provider<PosixFile, ()> for BodyfileConverter {
+    fn get_receiver(&mut self) -> Receiver<PosixFile> {
         self.rx.take().unwrap()
     }
 }
 
 impl Consumer<Bodyfile3Line> for BodyfileConverter {
     fn with_receiver(reader: Receiver<Bodyfile3Line>, options: RunOptions) -> Self {
-        let (tx, rx): (Sender<Value>, Receiver<Value>) = mpsc::channel();
+        let (tx, rx): (Sender<PosixFile>, Receiver<PosixFile>) = mpsc::channel();
         Self {
             worker: Some(std::thread::spawn(move || {
                 Self::worker(reader, tx, options)
@@ -29,8 +28,8 @@ impl Consumer<Bodyfile3Line> for BodyfileConverter {
     }
 }
 
-impl Filter<Bodyfile3Line, Value, ()> for BodyfileConverter {
-    fn worker(reader: Receiver<Bodyfile3Line>, tx: std::sync::mpsc::Sender<Value>, _options: crate::RunOptions) {
+impl Filter<Bodyfile3Line, PosixFile, ()> for BodyfileConverter {
+    fn worker(reader: Receiver<Bodyfile3Line>, tx: std::sync::mpsc::Sender<PosixFile>, _options: crate::RunOptions) {
         loop {
             let bf_line = match reader.recv() {
                 Err(_) => break,
@@ -38,10 +37,8 @@ impl Filter<Bodyfile3Line, Value, ()> for BodyfileConverter {
             };
 
             let pfile = PosixFile::from(bf_line);
-            for doc in pfile.documents() {
-                if tx.send(doc).is_err() {
-                    return;
-                }
+            if tx.send(pfile).is_err() {
+                return;
             }
         }
     }

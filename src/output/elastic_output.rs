@@ -4,9 +4,8 @@ use std::{
     thread::JoinHandle,
 };
 
-use elastic4forensics::{Index, IndexBuilder, WithHost};
+use es4forensics::{Index, IndexBuilder, WithHost, objects::PosixFile};
 use elasticsearch::auth::Credentials;
-use serde_json::Value;
 
 use crate::{Joinable, Mactime2Writer, RunOptions};
 
@@ -18,7 +17,7 @@ pub struct ElasticOutput {
     index_name: String,
     expect_existing: bool,
     omit_certificate_validation: bool,
-    receiver: Option<Receiver<Value>>,
+    receiver: Option<Receiver<PosixFile>>,
     options: RunOptions,
     worker: Option<JoinHandle<()>>,
 }
@@ -32,7 +31,7 @@ impl ElasticOutput {
         index_name: String,
         expect_existing: bool,
         omit_certificate_validation: bool,
-        receiver: Receiver<Value>,
+        receiver: Receiver<PosixFile>,
         options: RunOptions,
     ) -> Self {
         Self {
@@ -77,7 +76,7 @@ impl ElasticOutput {
         builder.build()
     }
 
-    fn worker(decoder: Receiver<Value>, index: Index) -> () {
+    fn worker(decoder: Receiver<PosixFile>, index: Index) {
         let mut index = index;
         loop {
             let value = match decoder.recv() {
@@ -88,7 +87,7 @@ impl ElasticOutput {
                 }
             };
 
-            if let Err(why) = index.add_bulk_document(value) {
+            if let Err(why) = index.add_timeline_object(value) {
                 log::error!("unable to insert document: {}", why);
                 return;
             }
