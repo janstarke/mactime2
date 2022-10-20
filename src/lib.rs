@@ -169,7 +169,7 @@ impl From<Cli> for Mactime2Application {
 
         Self {
             format,
-            bodyfile: Some(cli.bodyfile),
+            bodyfile: Some(cli.input_file),
             src_zone: cli.src_zone.map(|tz| tz.parse().unwrap()).unwrap_or(Tz::UTC),
             dst_zone: cli.dst_zone.map(|tz| tz.parse().unwrap()).unwrap_or(Tz::UTC),
             strict_mode: cli.strict_mode,

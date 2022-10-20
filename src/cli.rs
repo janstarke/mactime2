@@ -1,19 +1,34 @@
-use clap::Parser;
+use std::fmt::Display;
+
+use clap::{Parser, ValueEnum};
 use crate::{InputFormat, OutputFormat};
 
 
 #[cfg(feature = "gzip")]
-const BODYFILE_HELP: &str = "path to bodyfile of '-' for stdin (files ending with .gz will be treated as being gzipped)";
+const BODYFILE_HELP: &str = "path to input file or '-' for stdin (files ending with .gz will be treated as being gzipped)";
 #[cfg(not(feature = "gzip"))]
-const BODYFILE_HELP: &str = "path to bodyfile of '-' for stdin";
+const BODYFILE_HELP: &str = "path to input file or '-' for stdin";
 
+#[derive(ValueEnum, Clone)]
+pub (crate) enum Protocol {
+    HTTP,
+    HTTPS
+}
 
+impl Display for Protocol {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Protocol::HTTP => write!(f, "http"),
+            Protocol::HTTPS => write!(f, "https"),
+        }
+    }
+}
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 pub struct Cli {
     #[clap(short('b'), default_value="-", help=BODYFILE_HELP, display_order(100))]
-    pub(crate) bodyfile: String,
+    pub(crate) input_file: String,
 
     /// input format
     #[clap(short('I'), long("input-format"), value_enum, display_order(550), default_value_t=InputFormat::BODYFILE)]
@@ -26,12 +41,12 @@ pub struct Cli {
 
     /// output as CSV instead of TXT. This is a conveniance option, which is identical to `--format=csv`
     /// and will be removed in a future release. If you specified `--format` and `-d`, the latter will be ignored.
-    #[clap(short('d'), display_order(700))]
+    #[clap(short('d'), display_order(610))]
     pub(crate) csv_format: bool,
 
     /// output as JSON instead of TXT. This is a conveniance option, which is identical to `--format=json`
     /// and will be removed in a future release. If you specified `--format` and `-j`, the latter will be ignored.
-    #[clap(short('j'), display_order(800))]
+    #[clap(short('j'), display_order(620))]
     pub(crate) json_format: bool,
 
     /// name of offset of source timezone (or 'list' to display all possible values
@@ -46,48 +61,48 @@ pub struct Cli {
     #[clap(long("strict"), display_order(500))]
     pub(crate) strict_mode: bool,
 
-    /// server name or IP address of elasticsearch server
-    #[clap(short('H'), long("host"), display_order=600, default_value="localhost")]
-    #[cfg(feature="elastic")]
-    pub(crate) host: String,
-
-    /// API port number of elasticsearch server
-    #[clap(short('P'), long("port"), display_order=610, default_value_t=9200)]
-    #[cfg(feature="elastic")]
-    pub(crate) port: u16,
-
     /// name of the elasticsearch index
-    #[clap(long("index"), display_order=615)]
+    #[clap(long("index"), display_order=800)]
     #[cfg(feature="elastic")]
     pub(crate) index_name: Option<String>,
-
-    /// username for elasticsearch server
-    #[clap(short('U'), long("username"), display_order=620, default_value=Some("elastic"))]
-    #[cfg(feature="elastic")]
-    pub(crate) username: String,
-
-    /// password for authenticating at elasticsearch
-    #[clap(short('W'), long("password"), display_order=620)]
-    #[cfg(feature="elastic")]
-    pub(crate) password: Option<String>,
 
     /// If this flag is set, a new index is created if it does not exist already, and new values
     /// will be inserted into the index, no matter what. If the flag is not set, mactime2 will
     /// check if the index exists and will abort if there is already such an index. Otherwise, the index
     /// will be newly created.
-    #[clap(short('X'), long("expect-existing"), display_order=630, default_value_t=false)]
+    #[clap(short('X'), long("expect-existing"), display_order=805, default_value_t=false)]
     #[cfg(feature="elastic")]
     pub(crate) expect_existing: bool,
 
+    /// server name or IP address of elasticsearch server
+    #[clap(short('H'), long("host"), display_order=810, default_value="localhost")]
+    #[cfg(feature="elastic")]
+    pub(crate) host: String,
+
+    /// API port number of elasticsearch server
+    #[clap(short('P'), long("port"), display_order=820, default_value_t=9200)]
+    #[cfg(feature="elastic")]
+    pub(crate) port: u16,
+
+    /// protocol to be used to connect to elasticsearch
+    #[clap(long("proto"), display_order=830, default_value_t=Protocol::HTTPS)]
+    #[cfg(feature="elastic")]
+    pub(crate) protocol: Protocol,
+
     /// omit certificate validation
-    #[clap(short('k'), long("insecure"), display_order=640, default_value_t=false)]
+    #[clap(short('k'), long("insecure"), display_order=840, default_value_t=false)]
     #[cfg(feature="elastic")]
     pub(crate) omit_certificate_validation: bool,
 
-    /// omit certificate validation
-    #[clap(short('k'), long("insecure"), display_order=640, default_value_t=false)]
+    /// username for elasticsearch server
+    #[clap(short('U'), long("username"), display_order=850, default_value=Some("elastic"))]
     #[cfg(feature="elastic")]
-    pub(crate) omit_certificate_validation: bool,
+    pub(crate) username: String,
+
+    /// password for authenticating at elasticsearch
+    #[clap(short('W'), long("password"), display_order=860)]
+    #[cfg(feature="elastic")]
+    pub(crate) password: Option<String>,
 
     #[clap(flatten)]
     pub(crate) verbose: clap_verbosity_flag::Verbosity,
