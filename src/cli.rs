@@ -7,6 +7,8 @@ const BODYFILE_HELP: &str = "path to bodyfile of '-' for stdin (files ending wit
 #[cfg(not(feature = "gzip"))]
 const BODYFILE_HELP: &str = "path to bodyfile of '-' for stdin";
 
+
+
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 pub struct Cli {
@@ -76,6 +78,11 @@ pub struct Cli {
     #[clap(short('X'), long("expect-existing"), display_order=630, default_value_t=false)]
     #[cfg(feature="elastic")]
     pub(crate) expect_existing: bool,
+
+    /// omit certificate validation
+    #[clap(short('k'), long("insecure"), display_order=640, default_value_t=false)]
+    #[cfg(feature="elastic")]
+    pub(crate) omit_certificate_validation: bool,
 
     /// omit certificate validation
     #[clap(short('k'), long("insecure"), display_order=640, default_value_t=false)]
