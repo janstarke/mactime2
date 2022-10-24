@@ -70,19 +70,6 @@ impl Mactime2Application {
         Ok(())
     }
 
-    pub fn normalize_date(unix_ts: i64, src_zone: &Tz) -> Result<DateTime<Utc>> {
-        let src_timestamp =
-            match src_zone.from_local_datetime(&NaiveDateTime::from_timestamp(unix_ts, 0)) {
-                LocalResult::None => {
-                    return Err(anyhow!("INVALID DATETIME"));
-                }
-                LocalResult::Single(t) => t,
-                LocalResult::Ambiguous(t1, _t2) => t1,
-            };
-        let dst_timestamp = src_timestamp.with_timezone(&Utc);
-        Ok(dst_timestamp)
-    }
-
     pub fn format_date(unix_ts: i64, src_zone: &Tz, dst_zone: &Tz) -> String {
         if unix_ts >= 0 {
             let src_timestamp =
