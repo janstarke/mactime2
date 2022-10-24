@@ -1,41 +1,26 @@
+use std::borrow::Borrow;
+use std::convert::TryFrom;
 use chrono_tz::Tz;
-use crate::{Mactime2Application, Mactime2Writer};
+use es4forensics::objects::{PosixFile, ElasticObject};
+use crate::{Mactime2Writer};
 use crate::bodyfile::*;
 
 pub struct JsonOutput {
-    src_zone: Tz, dst_zone: Tz
+    src_zone: Tz
 }
 
 impl JsonOutput {
-    pub fn new(src_zone: Tz, dst_zone: Tz) -> Self {
+    pub fn new(src_zone: Tz) -> Self {
         Self {
-            src_zone, dst_zone
+            src_zone
         }
     }
 }
 
 impl Mactime2Writer for JsonOutput {
-    fn fmt(&self, timestamp: &i64, entry: &ListEntry) -> String {
-        let timestamp = Mactime2Application::format_date(*timestamp, &self.src_zone, &self.dst_zone);
-        format!(
-            concat!("{{", 
-                "\"ts\": \"{}\", ",
-                "\"size\": {}, ",
-                "\"flags\": \"{}\", ",
-                "\"mode\": \"{}\", ",
-                "\"uid\": {}, ",
-                "\"gid\": {}, ",
-                "\"inode\": \"{}\", ",
-                "\"name\": \"{}\"",
-            "}}"),
-            timestamp,
-            entry.line.get_size(),
-            entry.flags,
-            entry.line.get_mode(),
-            entry.line.get_uid(),
-            entry.line.get_gid(),
-            entry.line.get_inode(),
-            entry.line.get_name().replace('\\', "\\\\").replace('\"', "\\\"")
-        )
+    fn fmt(&self, _timestamp: &i64, entry: &ListEntry) -> String {
+        let pf = PosixFile::try_from((entry.line.borrow(), &self.src_zone)).unwrap();
+        let lines: Vec<String> = pf.documents().map(|v|serde_json::to_string(&v)).map(Result::unwrap).collect();
+        lines.join("\n")
     }
 }
