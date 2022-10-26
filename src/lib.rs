@@ -1,6 +1,6 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result};
 use chrono::offset::TimeZone;
-use chrono::{LocalResult, NaiveDateTime, DateTime, Utc};
+use chrono::{LocalResult, NaiveDateTime};
 use chrono_tz::Tz;
 
 pub mod bodyfile;
@@ -47,21 +47,36 @@ pub struct Mactime2Application {
 }
 
 impl Mactime2Application {
+
+    fn create_sorter(&self, decoder: &mut BodyfileDecoder) -> Box<dyn Sorter<Result<(), MactimeError>>> {
+        let options = RunOptions {
+            strict_mode: self.strict_mode,
+            src_zone: self.src_zone,
+        };
+
+        if matches!(self.format, OutputFormat::JSON) {
+            Box::new(JsonSorter::with_receiver(decoder.get_receiver(), options))
+        } else {
+            let mut sorter = BodyfileSorter::default().with_receiver(decoder.get_receiver(), options);
+
+            sorter = sorter.with_output(match self.format {
+                OutputFormat::CSV => Box::new(CsvOutput::new(self.src_zone, self.dst_zone)),
+                OutputFormat::TXT => Box::new(TxtOutput::new(self.src_zone, self.dst_zone)),
+                _ => panic!("invalid execution path"),
+            });
+            Box::new(sorter)
+        }
+    }
+
     pub fn run(&self) -> Result<()> {
         let options = RunOptions {
             strict_mode: self.strict_mode,
+            src_zone: self.src_zone,
         };
 
         let mut reader = <BodyfileReader as StreamReader<String, ()>>::from(&self.bodyfile)?;
         let mut decoder = BodyfileDecoder::with_receiver(reader.get_receiver(), options);
-        let mut sorter = BodyfileSorter::default().with_receiver(decoder.get_receiver(), options);
-
-        sorter = sorter.with_output(match self.format {
-            OutputFormat::CSV => Box::new(CsvOutput::new(self.src_zone, self.dst_zone)),
-            OutputFormat::TXT => Box::new(TxtOutput::new(self.src_zone, self.dst_zone)),
-            OutputFormat::JSON => Box::new(JsonOutput::new(self.src_zone)),
-            _ => panic!("invalid execution path"),
-        });
+        let mut sorter = self.create_sorter(&mut decoder);
         sorter.run();
 
         let _ = reader.join();

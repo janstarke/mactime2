@@ -1,4 +1,4 @@
-use crate::MactimeError;
+use crate::{MactimeError, Runnable, Sorter};
 use crate::{Joinable, RunOptions};
 use bitflags::bitflags;
 use bodyfile::Bodyfile3Line;
@@ -112,15 +112,16 @@ fn insert_timestamp(
     }
 }
 
-impl BodyfileSorter {
-
-    pub fn run(&mut self) {
+impl Runnable for BodyfileSorter {
+    fn run(&mut self) {
         let receiver = self.receiver.take().expect("no receiver provided; please call with_receiver()");
         let output = self.output.take().expect("no output provided; please call with_output()");
         self.worker = Some(
             std::thread::spawn(move || Self::worker(receiver, output)));
     }
+}
 
+impl BodyfileSorter {
     pub fn with_receiver(mut self, decoder: Receiver<Bodyfile3Line>, _: RunOptions) -> Self {
         self.receiver = Some(decoder);
         self
@@ -216,3 +217,5 @@ impl Joinable<Result<(), MactimeError>> for BodyfileSorter {
         self.worker.take().unwrap().join()
     }
 }
+
+impl Sorter<Result<(), MactimeError>> for BodyfileSorter {}

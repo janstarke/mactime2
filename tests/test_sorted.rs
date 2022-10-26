@@ -11,6 +11,7 @@ fn test_sorted() {
 
     let options = RunOptions {
         strict_mode: false,
+        src_zone: chrono_tz::Tz::UTC
     };
 
     let mut decoder = BodyfileDecoder::with_receiver(rx, options);

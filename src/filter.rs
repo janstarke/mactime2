@@ -1,8 +1,11 @@
 use std::sync::mpsc::{Sender, Receiver};
 
+use chrono_tz::Tz;
+
 #[derive(Copy, Clone)]
 pub struct RunOptions {
-    pub strict_mode: bool
+    pub strict_mode: bool,
+    pub src_zone: Tz
 }
 
 pub trait Provider<To, R>: Joinable<R> {
@@ -20,3 +23,9 @@ pub trait Filter<From, To, R> : Consumer<From> + Provider<To, R> {
 pub trait Joinable<R> {
     fn join(&mut self) -> std::thread::Result<R>;
 }
+
+pub trait Runnable {
+    fn run(&mut self);
+}
+
+pub trait Sorter<T>: Runnable + Joinable<T> {}
