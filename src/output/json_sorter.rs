@@ -7,7 +7,7 @@ use std::{
 
 use bodyfile::Bodyfile3Line;
 use chrono_tz::Tz;
-use es4forensics::{objects::{ElasticObject, PosixFile}, Timestamp};
+use es4forensics::{objects::PosixFile, Timestamp, TimelineObject};
 use std::convert::TryFrom;
 
 use crate::{Consumer, Joinable, MactimeError, Runnable, Sorter};
@@ -59,11 +59,11 @@ impl JsonSorter {
                 Ok(l) => l,
             });
 
-            let pf = PosixFile::try_from((line.borrow(), &src_zone)).unwrap();
+            let bfline: &Bodyfile3Line = line.borrow();
+            let pf = PosixFile::try_from((bfline, &src_zone)).unwrap();
 
-            let lines: Vec<(Timestamp, String)> = pf
-                .documents()
-                .map(|(ts, v)| (ts, serde_json::to_string(&v).unwrap()))
+            let lines: Vec<(Timestamp, String)> = pf.into_tuples()
+                .map(|(t, v)| (t, serde_json::to_string(&v).unwrap()))
                 .collect();
 
             if lines.is_empty() {

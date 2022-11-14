@@ -31,4 +31,3 @@ fn display_zones() {
         println!("{}", v);
     }
 }
-

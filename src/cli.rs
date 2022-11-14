@@ -36,6 +36,10 @@ pub struct Cli {
     #[clap(short('t'), long("to-timezone"), display_order(400))]
     pub(crate) dst_zone: Option<String>,
 
+    /// convert only, but do not sort
+    #[clap(short('c'), long("convert-only"), display_order(450))]
+    pub(crate) dont_sort: bool,
+
     /// strict mode: do not only warn, but abort if an error occurs
     #[clap(long("strict"), display_order(500))]
     pub(crate) strict_mode: bool,
