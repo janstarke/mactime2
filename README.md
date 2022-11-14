@@ -20,60 +20,23 @@ cargo install mactime2
 # Usage
 
 ```
+Usage: mactime2 [OPTIONS]
+
 Options:
-  -v, --verbose...
-          More output per occurrence
-  -q, --quiet...
-          Less output per occurrence
-  -b <INPUT_FILE>
-          path to input file or '-' for stdin (files ending with .gz will be
-          treated as being gzipped) [default: -]
-  -f, --from-timezone <SRC_ZONE>
-          name of offset of source timezone (or 'list' to display all possible
-          values
-  -t, --to-timezone <DST_ZONE>
-          name of offset of destination timezone (or 'list' to display all
-          possible values
-      --strict
-          strict mode: do not only warn, but abort if an error occurs
-  -I, --input-format <INPUT_FORMAT>
-          input format [default: bodyfile] [possible values: bodyfile, json]
-  -F, --format <OUTPUT_FORMAT>
-          output format, if not specified, default value is 'txt' [possible
-          values: csv, txt, json, elastic]
-  -d
-          output as CSV instead of TXT. This is a conveniance option, which is
-          identical to `--format=csv` and will be removed in a future release.
-          If you specified `--format` and `-d`, the latter will be ignored
-  -j
-          output as JSON instead of TXT. This is a conveniance option, which is
-          identical to `--format=json` and will be removed in a future release.
-          If you specified `--format` and `-j`, the latter will be ignored
-      --index <INDEX_NAME>
-          name of the elasticsearch index
-  -X, --expect-existing
-          If this flag is set, a new index is created if it does not exist
-          already, and new values will be inserted into the index, no matter
-          what. If the flag is not set, mactime2 will check if the index exists
-          and will abort if there is already such an index. Otherwise, the index
-          will be newly created
-  -H, --host <HOST>
-          server name or IP address of elasticsearch server [default: localhost]
-  -P, --port <PORT>
-          API port number of elasticsearch server [default: 9200]
-      --proto <PROTOCOL>
-          protocol to be used to connect to elasticsearch [default: https]
-          [possible values: http, https]
-  -k, --insecure
-          omit certificate validation
-  -U, --username <USERNAME>
-          username for elasticsearch server [default: elastic]
-  -W, --password <PASSWORD>
-          password for authenticating at elasticsearch
-  -h, --help
-          Print help information
-  -V, --version
-          Print version information
+  -v, --verbose...                More output per occurrence
+  -q, --quiet...                  Less output per occurrence
+  -b <INPUT_FILE>                 path to input file or '-' for stdin (files ending with .gz will be treated as being gzipped) [default: -]
+  -f, --from-timezone <SRC_ZONE>  name of offset of source timezone (or 'list' to display all possible values
+  -t, --to-timezone <DST_ZONE>    name of offset of destination timezone (or 'list' to display all possible values
+      --strict                    strict mode: do not only warn, but abort if an error occurs
+  -F, --format <OUTPUT_FORMAT>    output format, if not specified, default value is 'txt' [possible values: csv, txt, json, elastic]
+  -d                              output as CSV instead of TXT. This is a conveniance option, which is identical to `--format=csv` and will be removed in a future release.
+                                  If you specified `--format` and `-d`, the latter will be ignored
+  -j                              output as JSON instead of TXT. This is a conveniance option, which is identical to `--format=json` and will be removed in a future release.
+                                  If you specified `--format` and `-j`, the latter will be ignored
+  -h, --help                      Print help information
+  -V, --version                   Print version information
+
 ```
 
 # Examples
