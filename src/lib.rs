@@ -88,7 +88,7 @@ impl Mactime2Application {
     pub fn format_date(unix_ts: i64, src_zone: &Tz, dst_zone: &Tz) -> String {
         if unix_ts >= 0 {
             let src_timestamp =
-                match src_zone.from_local_datetime(&NaiveDateTime::from_timestamp(unix_ts, 0)) {
+                match src_zone.from_local_datetime(&NaiveDateTime::from_timestamp_opt(unix_ts, 0).unwrap()) {
                     LocalResult::None => {
                         return "INVALID DATETIME".to_owned();
                     }
