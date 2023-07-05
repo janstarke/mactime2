@@ -59,7 +59,7 @@ mod tests {
             };
 
             let out_line = output.fmt(&unix_ts, &entry);
-            let out_ts = out_line.split(',').into_iter().next().unwrap();
+            let out_ts = out_line.split(',').next().unwrap();
             let rfc3339 = DateTime::parse_from_rfc3339(out_ts).expect(out_ts);
             assert_eq!(unix_ts, rfc3339.timestamp(), "Timestamp {} converted to '{}' and back to {}", unix_ts, out_ts, rfc3339.timestamp());
         }
@@ -79,7 +79,7 @@ mod tests {
             };
 
             let out_line = output.fmt(&unix_ts, &entry);
-            let out_ts = out_line.split(',').into_iter().next().unwrap();
+            let out_ts = out_line.split(',').next().unwrap();
             let rfc3339 = match DateTime::parse_from_rfc3339(out_ts) {
                 Ok(ts) => ts,
                 Err(e) => return Err(format!("error while parsing '{}': {}", out_ts, e))
