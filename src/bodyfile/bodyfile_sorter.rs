@@ -4,9 +4,7 @@ use bitflags::bitflags;
 use bodyfile::Bodyfile3Line;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
-use std::collections::BTreeMap;
-use std::collections::BTreeSet;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::fmt;
 use std::sync::Arc;
 use std::sync::mpsc::Receiver;
@@ -75,7 +73,7 @@ impl Ord for ListEntry {
 }
 
 fn insert_timestamp(
-    entries: &mut BTreeMap<i64, BTreeSet<ListEntry>>,
+    entries: &mut BTreeMap<i64, Vec<ListEntry>>,
     flag: MACBFlags,
     line: Arc<Bodyfile3Line>,
 ) {
@@ -93,12 +91,12 @@ fn insert_timestamp(
 
     match entries.get_mut(&timestamp) {
         None => {
-            let mut entries_at_ts = BTreeSet::new();
+            let mut entries_at_ts = Vec::new();
             let entry = ListEntry {
                 flags: flag,
                 line,
             };
-            entries_at_ts.insert(entry);
+            entries_at_ts.push(entry);
             entries.insert(timestamp, entries_at_ts);
         }
 
@@ -107,7 +105,7 @@ fn insert_timestamp(
                 flags: flag,
                 line,
             };
-            entries_at_ts.insert(entry);
+            entries_at_ts.push(entry);
         }
     }
 }
@@ -133,7 +131,7 @@ impl BodyfileSorter {
     }
 
     fn worker(decoder: Receiver<Bodyfile3Line>, output: Box<dyn Mactime2Writer>) -> Result<(), MactimeError> {
-        let mut entries: BTreeMap<i64, BTreeSet<ListEntry>> = BTreeMap::new();
+        let mut entries: BTreeMap<i64, Vec<ListEntry>> = BTreeMap::new();
         let mut names: HashSet<(String,String)> = HashSet::new();
 
         loop {
