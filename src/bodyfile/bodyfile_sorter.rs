@@ -25,6 +25,7 @@ pub struct BodyfileSorter {
 }
 
 bitflags! {
+    #[derive(PartialEq, Debug, Clone, Copy)]
     pub struct MACBFlags: u8 {
         const NONE = 0b00000000;
         const M = 0b00000001;
