@@ -4,7 +4,7 @@ version = "3.2.0"
 edition = "2018"
 authors = ["Jan Starke <Jan.Starke@t-systems.com>"]
 description = "Replacement for `mactime`"
-repository = "https://www.github.com/janstarke/mactime2"
+repository = "https://github.com/janstarke/mactime2"
 license = "GPL-3.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
