@@ -4,6 +4,13 @@
 # mactime2
 Replacement for `mactime`
 
+
+> **Warning**
+> This Repository has been moved to <https://github.com/janstarke/dfir-toolkit>
+>
+> You can install the tools by running `cargo install dfir-toolkit`
+> 
+
 ## Changes to original `mactime`
 
  - no implicit conversion of timestamp to local date/time
